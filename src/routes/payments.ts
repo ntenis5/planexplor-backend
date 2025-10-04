@@ -4,7 +4,7 @@ import { supabase } from '../services/supabaseClient';
 
 const router = express.Router();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-09-30.clover' // ← KJO ËSHTË KORREKTE!
+  apiVersion: '2025-09-30.clover' as any // ← KJO ËSHTË KORREKTE!
 });
 
 // Create payment intent
