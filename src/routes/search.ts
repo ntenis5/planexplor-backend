@@ -1,5 +1,3 @@
-// src/routes/search.ts
-
 import type { Request, Response } from 'express'; 
 import { AffiliateService } from '../services/affiliateService';
 import { CacheService } from '../services/cacheService'; 
@@ -7,6 +5,9 @@ import { CacheService } from '../services/cacheService';
 const affiliateService = new AffiliateService();
 const cacheService = CacheService.getInstance(); 
 
+/**
+ * Krijon një çelës unik të cache-it nga parametrat e kërkimit.
+ */
 function generateCacheKey(params: any): string {
     const sortedKeys = Object.keys(params).sort();
     const sortedParamsString = JSON.stringify(params, sortedKeys);
@@ -14,7 +15,7 @@ function generateCacheKey(params: any): string {
 }
 
 /**
- * Funksioni Kryesor i Kërkimit (Tani si eksport default)
+ * Funksioni Kryesor i Kërkimit. Përfshin logjikën e Caching-ut.
  */
 export async function handleSearchRequest(req: Request, res: Response) {
     let isCached = false;
@@ -32,6 +33,7 @@ export async function handleSearchRequest(req: Request, res: Response) {
             user_location
         } = body; 
 
+        // 1. Validimi
         if (!destination || !user_location) {
             return res.status(400).json({
                 error: 'Destination and user location are required'
@@ -90,5 +92,6 @@ export async function handleSearchRequest(req: Request, res: Response) {
     }
 }
 
-// ZGJIDHJA E GABIMIT TS1192: Eksportoje funksionin si "default"
+// ZGJIDHJA e gabimit 'no default export':
 export default handleSearchRequest;
+    
