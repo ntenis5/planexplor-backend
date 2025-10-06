@@ -1,7 +1,5 @@
 // src/routes/search.ts
 
-// Hapi Kritik: Përdorim importin e "type" për të garantuar që TypeScript i njeh Request/Response.
-// Kjo është shumë më e sigurt se "req: any, res: any".
 import type { Request, Response } from 'express'; 
 import { AffiliateService } from '../services/affiliateService';
 import { CacheService } from '../services/cacheService'; 
@@ -9,26 +7,17 @@ import { CacheService } from '../services/cacheService';
 const affiliateService = new AffiliateService();
 const cacheService = CacheService.getInstance(); 
 
-/**
- * Funksioni për të krijuar një Çelës Unik Cache-i nga parametrat e kërkimit
- * Garaton që kërkimet identike të kenë të njëjtin çelës, pavarësisht renditjes së hyrjes.
- */
 function generateCacheKey(params: any): string {
     const sortedKeys = Object.keys(params).sort();
     const sortedParamsString = JSON.stringify(params, sortedKeys);
-    
     return `search_results_${sortedParamsString}`;
 }
 
-
 /**
- * Funksioni Kryesor i Kërkimit
- * Eksportohet si funksion i vetëm që lidhet me URL-në tuaj në konfigurimin e Railway.
+ * Funksioni Kryesor i Kërkimit (Tani si eksport default)
  */
 export async function handleSearchRequest(req: Request, res: Response) {
     let isCached = false;
-    
-    // Mënyra e sigurt për të marrë trupin e kërkesës (req.body)
     const body = req.body || {}; 
     
     try {
@@ -43,7 +32,6 @@ export async function handleSearchRequest(req: Request, res: Response) {
             user_location
         } = body; 
 
-        // 1. Validimi
         if (!destination || !user_location) {
             return res.status(400).json({
                 error: 'Destination and user location are required'
@@ -51,67 +39,47 @@ export async function handleSearchRequest(req: Request, res: Response) {
         }
 
         const searchParams = {
-            category,
-            destination,
-            distance: Number(distance),
-            budget: Number(budget),
-            persons: Number(persons),
-            check_in,
-            check_out,
-            user_location
+            category, destination, distance: Number(distance), budget: Number(budget),
+            persons: Number(persons), check_in, check_out, user_location
         };
 
         const cacheKey = generateCacheKey(searchParams);
 
-        // 2. KONTROLLO CACHE-IN (Hapi Kritik)
+        // 2. KONTROLLO CACHE-IN
         const cachedResults = await cacheService.getFromCache(cacheKey);
 
         if (cachedResults) {
             isCached = true;
             console.log(`✅ Kërkesa u shërbye nga Cache: ${cacheKey}`);
             
-            // Kthe përgjigjen MENJËHERË
             return res.status(200).json({
                 results: cachedResults,
                 metadata: { 
-                    total_results: cachedResults.length,
-                    category,
-                    search_center: user_location
+                    total_results: cachedResults.length, category, search_center: user_location
                 },
-                cache_info: {
-                    cached: true,
-                    last_updated: new Date().toISOString()
-                }
+                cache_info: { cached: true, last_updated: new Date().toISOString() }
             });
         }
 
         // 3. NËSE S'KA CACHE: Ekzekuto kërkesën e vërtetë
         const results = await affiliateService.search(searchParams);
 
-        // 4. RUAJ NË CACHE për herën tjetër
+        // 4. RUAJ NË CACHE
         if (results.length > 0) {
             await cacheService.setToCache(cacheKey, results);
             console.log(`💾 Rezultati i ri u ruajt në Cache: ${cacheKey}`);
         }
 
-        // 5. Kthe përgjigjen origjinale
+        // 5. Kthe përgjigjen
         return res.status(200).json({
             results,
             metadata: {
-                total_results: results.length,
-                category,
-                budget_range: budget ? {
-                    min: budget * 0.8,
-                    max: budget,
-                    user_input: budget
-                } : null,
+                total_results: results.length, category,
+                budget_range: budget ? { min: budget * 0.8, max: budget, user_input: budget } : null,
                 distance_range: distance ? `0-${distance}km` : 'Any distance',
                 search_center: user_location
             },
-            cache_info: {
-                cached: isCached, // Do të jetë false
-                last_updated: new Date().toISOString()
-            }
+            cache_info: { cached: isCached, last_updated: new Date().toISOString() }
         });
 
     } catch (error) {
@@ -120,4 +88,7 @@ export async function handleSearchRequest(req: Request, res: Response) {
             error: 'Internal server error during search'
         });
     }
-            }
+}
+
+// ZGJIDHJA E GABIMIT TS1192: Eksportoje funksionin si "default"
+export default handleSearchRequest;
