@@ -4,7 +4,8 @@ import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
-import searchRoutes from './routes/search';
+// Importo funksionin direkt si 'handleSearchRequest' (ose cilido qe eshte emri qe doni)
+import handleSearchRequest from './routes/search'; // Importi i ri
 import authRoutes from './routes/auth';
 import adsRoutes from './routes/ads';
 import paymentsRoutes from './routes/payments';
@@ -35,7 +36,11 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // Routes
-app.use('/api/search', searchRoutes);
+// VETEM rruga e search ndryshon:
+// Tani po e perdorni app.post sepse searchRoutes nuk eshte me nje Express Router
+app.post('/api/search', handleSearchRequest); 
+
+// Rrugët e tjera mbeten si me parë (supozojmë që ato ende eksportojnë router)
 app.use('/api/auth', authRoutes);
 app.use('/api/ads', adsRoutes);
 app.use('/api/payments', paymentsRoutes);
@@ -57,3 +62,4 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV}`);
 });
+  
