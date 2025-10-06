@@ -1,21 +1,20 @@
 // src/routes/search.ts
 
+// Hapi Kritik: Përdorim importin e "type" për të garantuar që TypeScript i njeh Request/Response.
+// Kjo është shumë më e sigurt se "req: any, res: any".
+import type { Request, Response } from 'express'; 
 import { AffiliateService } from '../services/affiliateService';
 import { CacheService } from '../services/cacheService'; 
-// Suponojmë që po përdorni një strukturë të ngjashme me Node.js/Express
-// Përndryshe, përdorni formatin e funksionit tuaj aktual.
 
 const affiliateService = new AffiliateService();
 const cacheService = CacheService.getInstance(); 
 
 /**
  * Funksioni për të krijuar një Çelës Unik Cache-i nga parametrat e kërkimit
+ * Garaton që kërkimet identike të kenë të njëjtin çelës, pavarësisht renditjes së hyrjes.
  */
 function generateCacheKey(params: any): string {
-    // Rendit çelësat e hyrjes për të siguruar konsistencë
     const sortedKeys = Object.keys(params).sort();
-    
-    // Kthe objektin në string me renditje
     const sortedParamsString = JSON.stringify(params, sortedKeys);
     
     return `search_results_${sortedParamsString}`;
@@ -23,14 +22,13 @@ function generateCacheKey(params: any): string {
 
 
 /**
- * Funksioni Kryesor i Kërkimit (Eksportohet si funksion i vetëm API)
- * Kjo zëvendëson router.post('/')
+ * Funksioni Kryesor i Kërkimit
+ * Eksportohet si funksion i vetëm që lidhet me URL-në tuaj në konfigurimin e Railway.
  */
-export async function handleSearchRequest(req: any, res: any) {
+export async function handleSearchRequest(req: Request, res: Response) {
     let isCached = false;
     
-    // Nese nuk perdorni Express.js, req.body mund te jete e ndryshme, 
-    // por supozojme qe po merr te dhenat POST nga trupi i kerkeses.
+    // Mënyra e sigurt për të marrë trupin e kërkesës (req.body)
     const body = req.body || {}; 
     
     try {
@@ -43,9 +41,9 @@ export async function handleSearchRequest(req: any, res: any) {
             check_in,
             check_out,
             user_location
-        } = body; // Perdorni body ne vend te req.body
+        } = body; 
 
-        // 1. Validimi i Detyrueshëm
+        // 1. Validimi
         if (!destination || !user_location) {
             return res.status(400).json({
                 error: 'Destination and user location are required'
@@ -65,7 +63,7 @@ export async function handleSearchRequest(req: any, res: any) {
 
         const cacheKey = generateCacheKey(searchParams);
 
-        // 2. HAPI KRITIK: KONTROLLO CACHE-IN
+        // 2. KONTROLLO CACHE-IN (Hapi Kritik)
         const cachedResults = await cacheService.getFromCache(cacheKey);
 
         if (cachedResults) {
@@ -122,5 +120,4 @@ export async function handleSearchRequest(req: any, res: any) {
             error: 'Internal server error during search'
         });
     }
-}
-// Kjo funksion tani duhet të lidhet me URL-në tuaj në konfigurimin e Railway (p.sh., /api/search)
+            }
