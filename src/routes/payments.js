@@ -1,14 +1,19 @@
-import express from 'express';
-import Stripe from 'stripe';
-import { supabase } from '../services/supabaseClient.js';
+// src/routes/payments.ts (VERSIONI I RREGULLUAR)
 
-const router = express.Router();
+import express from 'express'; // Këtu importoni express
+import Stripe from 'stripe';
+// ✅ RREGULLIMI: Shtuar .js
+import { supabase } from '../services/supabaseClient.js'; 
+
+const router = express.Router(); // Dhe këtu inicializoni router-in
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-09-30.clover' as any // ← KJO ËSHTË KORREKTE!
+  // Përdorni versionin e fundit API ose versionin tuaj
+  apiVersion: '2020-08-27' as any 
 });
 
 // Create payment intent
 router.post('/create-intent', async (req, res) => {
+  // ... (E gjithë logjika juaj e shkëlqyer mbetet e pandryshuar) ...
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
     const { package_type, custom_views, campaign_id } = req.body;
@@ -37,7 +42,7 @@ router.post('/create-intent', async (req, res) => {
       return res.status(400).json({ error: 'Invalid package type or missing custom_views' });
     }
 
-    // Create Stripe customer if not exists
+    // ... Logjika për Stripe Customer ID ...
     let customerId: string;
 
     const { data: existingCustomer } = await supabase
@@ -101,12 +106,15 @@ router.post('/create-intent', async (req, res) => {
   }
 });
 
-// Stripe webhook handler
+// Stripe webhook handler (Duhet të ketë 'express.raw' brenda app.ts për të funksionuar)
+// Kujdes: Nëse aplikacioni juaj ka middleware JSON global, ky webhook duhet të jetë në një router tjetër
+// Ose duhet të bëni siç e keni bërë ju, duke e përdorur `express.raw` brenda.
 router.post('/webhook', express.raw({type: 'application/json'}), async (req, res) => {
   const sig = req.headers['stripe-signature']!;
   let event;
 
   try {
+    // Sigurohuni që trupi (req.body) të jetë buffer-i i papërpunuar (raw buffer)
     event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET!);
   } catch (err) {
     console.error('Webhook signature verification failed:', err);
@@ -116,7 +124,7 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
   // Handle the event
   switch (event.type) {
     case 'payment_intent.succeeded':
-      const paymentIntent = event.data.object;
+      const paymentIntent = event.data.object as Stripe.PaymentIntent; // Përdorim tipin Stripe
       await handleSuccessfulPayment(paymentIntent);
       break;
     default:
@@ -126,8 +134,9 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
   res.json({received: true});
 });
 
-async function handleSuccessfulPayment(paymentIntent: any) {
+async function handleSuccessfulPayment(paymentIntent: Stripe.PaymentIntent) {
   try {
+    // metadata vjen si {[key: string]: string}
     const { user_id, package_type, views_count, campaign_id } = paymentIntent.metadata;
 
     // Update payment status
