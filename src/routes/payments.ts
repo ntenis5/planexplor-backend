@@ -1,39 +1,70 @@
-// src/routes/payments.ts
+// src/routes/payments.ts (VERSIONI ABSOLUT FINAL DHE I KONTROLLUAR)
 
 import { Router, Request, Response } from 'express'; 
 import Stripe from 'stripe';
-// ✅ Shtuar .js për shkak të konfigurimit NodeNext
 import { supabase } from '../services/supabaseClient.js';
+import express from 'express'; // Shto Express siç duhet
 
 // --- Tipi për trupin e kërkesës POST /create-intent ---
 interface CreateIntentBody {
-  package_type: 'mini' | 'standard' | 'custom'; // Përfshijmë 'standard' nga 'ads.ts'
+  package_type: 'mini' | 'standard' | 'custom';
   custom_views?: number;
-  campaign_id: string; // ID e fushatës së krijuar (pending_payment)
+  campaign_id: string; 
 }
 
-// Përdorim Router-in e saktë
 const paymentsRouter = Router(); 
 
-// Inicializimi i Stripe me API-version më të ri
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20', // Përdorim versionin aktual
+  apiVersion: '2024-06-20',
 });
 
 // ----------------------------------------------------------------------------------
+// FUNKSIONI PËR WEBHOOK: Përditëson Supabase pas Pagesës së Sukseshme
+// Kjo është nxjerrë si funksion i veçantë për të shmangur gabimet e scope-it
+// ----------------------------------------------------------------------------------
+async function handleSuccessfulPayment(paymentIntent: Stripe.PaymentIntent) {
+  try {
+    const { views_count, campaign_id } = paymentIntent.metadata;
+
+    // 1. Përditëso statusin e pagesës
+    await supabase
+      .from('payments')
+      .update({ 
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        stripe_latest_charge_id: paymentIntent.latest_charge as string 
+      })
+      .eq('stripe_payment_intent_id', paymentIntent.id);
+
+    // 2. Aktivizo fushatën e reklamave
+    if (campaign_id) {
+      await supabase
+        .from('ad_campaigns')
+        .update({
+          status: 'active',
+          activated_at: new Date().toISOString(),
+          stripe_payment_intent_id: paymentIntent.id
+        })
+        .eq('id', campaign_id);
+    }
+
+    console.log(`Payment successful: Campaign ${campaign_id} activated.`);
+
+  } catch (error) {
+    console.error('Error handling successful payment:', error);
+  }
+}
+
+// ----------------------------------------------------------------------------------
 // ENDPOINT: POST /api/payments/create-intent
-// Krijon intent-in e pagesës (PaymentIntent)
 // ----------------------------------------------------------------------------------
 paymentsRouter.post('/create-intent', async (req: Request<{}, {}, CreateIntentBody>, res: Response) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
     const { package_type, custom_views, campaign_id } = req.body;
 
-    if (!token) {
-      return res.status(401).json({ error: 'Nuk u ofrua token-i i autentifikimit.' });
-    }
-    if (!campaign_id) {
-         return res.status(400).json({ error: 'ID e fushatës është e nevojshme.' });
+    if (!token || !campaign_id) {
+      return res.status(400).json({ error: 'Token-i dhe ID e fushatës janë të nevojshme.' });
     }
 
     const { data: { user }, error } = await supabase.auth.getUser(token);
@@ -42,21 +73,19 @@ paymentsRouter.post('/create-intent', async (req: Request<{}, {}, CreateIntentBo
       return res.status(401).json({ error: 'Token-i i pavlefshëm.' });
     }
 
-    // Llogarit shumat bazuar në paketa
-    let amount = 0; // në cent
+    let amount = 0;
     let views_count = 0;
-    const PRICE_PER_VIEW = 50; // 0.50€ në cent
-    const STANDARD_PRICE_PER_VIEW = 45; // 0.45€ në cent
+    const PRICE_PER_VIEW = 50; 
 
     if (package_type === 'mini') {
-      amount = 2000; // 20€
+      amount = 2000;
       views_count = 40;
     } else if (package_type === 'standard') {
-        amount = 9000; // 90€
+        amount = 9000;
         views_count = 200;
     } else if (package_type === 'custom' && custom_views && custom_views > 0) {
       views_count = custom_views;
-      amount = Math.round(custom_views * PRICE_PER_VIEW); // 0.50€/view
+      amount = Math.round(custom_views * PRICE_PER_VIEW);
     } else {
       return res.status(400).json({ error: 'Lloji i paketës i pavlefshëm ose shikimet mungojnë.' });
     }
@@ -88,7 +117,6 @@ paymentsRouter.post('/create-intent', async (req: Request<{}, {}, CreateIntentBo
       currency: 'eur',
       customer: customerId,
       automatic_payment_methods: { enabled: true },
-      // Ruaj metadata për përdorim në webhook
       metadata: {
         user_id: user.id,
         package_type,
@@ -125,9 +153,7 @@ paymentsRouter.post('/create-intent', async (req: Request<{}, {}, CreateIntentBo
 
 // ----------------------------------------------------------------------------------
 // ENDPOINT: POST /api/payments/webhook
-// Trajton ngjarjet nga Stripe (Webhooks)
 // ----------------------------------------------------------------------------------
-// Kujdes: Ky endpoint duhet të ketë express.raw() si middleware lokal
 paymentsRouter.post('/webhook', express.raw({type: 'application/json'}), async (req: Request, res: Response) => {
   const sig = req.headers['stripe-signature']!;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
@@ -142,54 +168,14 @@ paymentsRouter.post('/webhook', express.raw({type: 'application/json'}), async (
   }
 
   // Trajto ngjarjen
-  switch (event.type) {
-    case 'payment_intent.succeeded':
+  if (event.type === 'payment_intent.succeeded') {
       const paymentIntent = event.data.object as Stripe.PaymentIntent; 
       await handleSuccessfulPayment(paymentIntent);
-      break;
-    default:
+  } else {
       console.log(`Unhandled event type: ${event.type}`);
   }
 
-  // Kthe përgjigje 200 për Stripe
   res.json({ received: true });
 });
-
-// ----------------------------------------------------------------------------------
-// Funksioni KRYESOR: Përditëson Supabase pas Pagesës së Sukseshme
-// ----------------------------------------------------------------------------------
-async function handleSuccessfulPayment(paymentIntent: Stripe.PaymentIntent) {
-  try {
-    const { user_id, views_count, campaign_id } = paymentIntent.metadata;
-
-    // 1. Përditëso statusin e pagesës
-    await supabase
-      .from('payments')
-      .update({ 
-        status: 'completed',
-        completed_at: new Date().toISOString(),
-        stripe_latest_charge_id: paymentIntent.latest_charge as string // ruaj charge id
-      })
-      .eq('stripe_payment_intent_id', paymentIntent.id);
-
-    // 2. Aktivizo fushatën e reklamave
-    if (campaign_id) {
-      await supabase
-        .from('ad_campaigns')
-        .update({
-          status: 'active', // ✅ Kjo është kritike
-          activated_at: new Date().toISOString(),
-          // Mund të ruash edhe PIID në fushatë për gjurmim
-          stripe_payment_intent_id: paymentIntent.id
-        })
-        .eq('id', campaign_id);
-    }
-
-    console.log(`Payment successful: Campaign ${campaign_id} activated.`);
-
-  } catch (error) {
-    console.error('Error handling successful payment:', error);
-  }
-}
 
 export default paymentsRouter;
