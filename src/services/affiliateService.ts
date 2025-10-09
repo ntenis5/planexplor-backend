@@ -40,11 +40,13 @@ interface SearchResult {
   category: string[];
 }
 
+// Koha e skadencës për Cache-in e kërkimit (1 orë)
+const SEARCH_CACHE_TTL_SECONDS = 3600; 
+
 export class AffiliateService {
   private cacheService: CacheService;
 
   constructor() {
-    // Kujdes: Sigurohuni që klasa CacheService të importohet me .js në krye
     this.cacheService = CacheService.getInstance();
   }
 
@@ -61,12 +63,13 @@ export class AffiliateService {
     const allResults = await this.fetchFromAllPartners(params);
     
     // Cache the results
-    await this.cacheService.setToCache(cacheKey, allResults);
+    // ✅ RREGULLUAR: Shtuar argumenti i tretë (TTL)
+    await this.cacheService.setToCache(cacheKey, allResults, SEARCH_CACHE_TTL_SECONDS);
     
     return this.filterResults(allResults, params);
   }
 
-  // ... (Të gjitha funksionet private, logjika e filtirmt, dhe mock API mbeten të pandryshuara) ...
+  // ... (Të gjitha funksionet private dhe mock API mbeten të pandryshuara) ...
   private generateCacheKey(params: SearchParams): string {
     return `search_${JSON.stringify(params)}`;
   }
@@ -77,6 +80,7 @@ export class AffiliateService {
 
     for (const partner of partners) {
       try {
+        // Kjo duhet zëvendësuar me thirrjet e vërteta të axios kur të keni çelësat
         const results = await this.fetchFromPartner(partner, params);
         allResults.push(...results);
       } catch (error) {
@@ -259,6 +263,7 @@ export async function updateAffiliateData(): Promise<void> {
   ];
 
   for (const search of popularSearches) {
-    await affiliateService.search(search);
+    // Këtu i shërben kërkesa e Cache-it pa TTL sepse është një cron-job
+    await affiliateService.search(search); 
   }
-  }
+}
