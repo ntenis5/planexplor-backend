@@ -1,7 +1,6 @@
-// src/routes/payments.ts (VERSIONI FINAL I QËNDRUESHËM)
+// src/routes/payments.ts (VERSIONI FINAL, I KORRIGJUAR PËR GABIMET E BUILD-IT)
 
-// Importi i plotë i detyrueshëm nga Express, i kombinuar me default import
-import express, { Router, Request, Response } from 'express'; 
+import express, { Request, Response } from 'express'; // Përdorim default import për Express dhe named imports për tipizim
 import Stripe from 'stripe';
 import { supabase } from '../services/supabaseClient.js';
 
@@ -12,7 +11,8 @@ interface CreateIntentBody {
   campaign_id: string; 
 }
 
-const paymentsRouter = Router(); 
+// Inicializimi me default import
+const paymentsRouter = express.Router(); 
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-06-20',
@@ -93,7 +93,7 @@ paymentsRouter.post('/create-intent', async (req: Request<{}, {}, CreateIntentBo
     const { data: existingCustomer } = await supabase
       .from('payments')
       .select('stripe_customer_id')
-      .eq('user_id', user.id)
+      .eq('user.id', user.id)
       .not('stripe_customer_id', 'is', null)
       .limit(1)
       .single();
@@ -158,7 +158,6 @@ paymentsRouter.post('/webhook', express.raw({type: 'application/json'}), async (
   let event: Stripe.Event;
 
   try {
-    // Kujdes: Këtu duhet trupi i papërpunuar (raw body)
     event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
   } catch (err) {
     console.error('Webhook signature verification failed.');
