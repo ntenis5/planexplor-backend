@@ -1,48 +1,67 @@
-// src/routes/payments.ts (VERSIONI I RREGULLUAR)
+// src/routes/payments.ts
 
-import express from 'express'; // Këtu importoni express
+import { Router, Request, Response } from 'express'; 
 import Stripe from 'stripe';
-// ✅ RREGULLIMI: Shtuar .js
-import { supabase } from '../services/supabaseClient.js'; 
+// ✅ Shtuar .js për shkak të konfigurimit NodeNext
+import { supabase } from '../services/supabaseClient.js';
 
-const router = express.Router(); // Dhe këtu inicializoni router-in
+// --- Tipi për trupin e kërkesës POST /create-intent ---
+interface CreateIntentBody {
+  package_type: 'mini' | 'standard' | 'custom'; // Përfshijmë 'standard' nga 'ads.ts'
+  custom_views?: number;
+  campaign_id: string; // ID e fushatës së krijuar (pending_payment)
+}
+
+// Përdorim Router-in e saktë
+const paymentsRouter = Router(); 
+
+// Inicializimi i Stripe me API-version më të ri
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  // Përdorni versionin e fundit API ose versionin tuaj
-  apiVersion: '2020-08-27' as any 
+  apiVersion: '2024-06-20', // Përdorim versionin aktual
 });
 
-// Create payment intent
-router.post('/create-intent', async (req, res) => {
-  // ... (E gjithë logjika juaj e shkëlqyer mbetet e pandryshuar) ...
+// ----------------------------------------------------------------------------------
+// ENDPOINT: POST /api/payments/create-intent
+// Krijon intent-in e pagesës (PaymentIntent)
+// ----------------------------------------------------------------------------------
+paymentsRouter.post('/create-intent', async (req: Request<{}, {}, CreateIntentBody>, res: Response) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
     const { package_type, custom_views, campaign_id } = req.body;
 
     if (!token) {
-      return res.status(401).json({ error: 'No token provided' });
+      return res.status(401).json({ error: 'Nuk u ofrua token-i i autentifikimit.' });
+    }
+    if (!campaign_id) {
+         return res.status(400).json({ error: 'ID e fushatës është e nevojshme.' });
     }
 
     const { data: { user }, error } = await supabase.auth.getUser(token);
     
     if (error || !user) {
-      return res.status(401).json({ error: 'Invalid token' });
+      return res.status(401).json({ error: 'Token-i i pavlefshëm.' });
     }
 
-    // Calculate amount based on package
-    let amount = 0;
+    // Llogarit shumat bazuar në paketa
+    let amount = 0; // në cent
     let views_count = 0;
+    const PRICE_PER_VIEW = 50; // 0.50€ në cent
+    const STANDARD_PRICE_PER_VIEW = 45; // 0.45€ në cent
 
     if (package_type === 'mini') {
-      amount = 2000; // 20€ in cents
+      amount = 2000; // 20€
       views_count = 40;
-    } else if (package_type === 'custom' && custom_views) {
+    } else if (package_type === 'standard') {
+        amount = 9000; // 90€
+        views_count = 200;
+    } else if (package_type === 'custom' && custom_views && custom_views > 0) {
       views_count = custom_views;
-      amount = Math.round(custom_views * 50); // 0.50€ per view in cents
+      amount = Math.round(custom_views * PRICE_PER_VIEW); // 0.50€/view
     } else {
-      return res.status(400).json({ error: 'Invalid package type or missing custom_views' });
+      return res.status(400).json({ error: 'Lloji i paketës i pavlefshëm ose shikimet mungojnë.' });
     }
-
-    // ... Logjika për Stripe Customer ID ...
+    
+    // 1. Gjej/Krijo Stripe Customer ID
     let customerId: string;
 
     const { data: existingCustomer } = await supabase
@@ -50,6 +69,7 @@ router.post('/create-intent', async (req, res) => {
       .select('stripe_customer_id')
       .eq('user_id', user.id)
       .not('stripe_customer_id', 'is', null)
+      .limit(1)
       .single();
 
     if (existingCustomer?.stripe_customer_id) {
@@ -57,30 +77,27 @@ router.post('/create-intent', async (req, res) => {
     } else {
       const customer = await stripe.customers.create({
         email: user.email,
-        metadata: {
-          user_id: user.id
-        }
+        metadata: { user_id: user.id }
       });
       customerId = customer.id;
     }
 
-    // Create payment intent
+    // 2. Krijon Payment Intent
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency: 'eur',
       customer: customerId,
-      automatic_payment_methods: {
-        enabled: true,
-      },
+      automatic_payment_methods: { enabled: true },
+      // Ruaj metadata për përdorim në webhook
       metadata: {
         user_id: user.id,
         package_type,
         views_count: views_count.toString(),
-        campaign_id: campaign_id || ''
+        campaign_id: campaign_id
       }
     });
 
-    // Save payment record
+    // 3. Regjistro pagesën fillestare (Pending)
     await supabase
       .from('payments')
       .insert({
@@ -106,64 +123,73 @@ router.post('/create-intent', async (req, res) => {
   }
 });
 
-// Stripe webhook handler (Duhet të ketë 'express.raw' brenda app.ts për të funksionuar)
-// Kujdes: Nëse aplikacioni juaj ka middleware JSON global, ky webhook duhet të jetë në një router tjetër
-// Ose duhet të bëni siç e keni bërë ju, duke e përdorur `express.raw` brenda.
-router.post('/webhook', express.raw({type: 'application/json'}), async (req, res) => {
+// ----------------------------------------------------------------------------------
+// ENDPOINT: POST /api/payments/webhook
+// Trajton ngjarjet nga Stripe (Webhooks)
+// ----------------------------------------------------------------------------------
+// Kujdes: Ky endpoint duhet të ketë express.raw() si middleware lokal
+paymentsRouter.post('/webhook', express.raw({type: 'application/json'}), async (req: Request, res: Response) => {
   const sig = req.headers['stripe-signature']!;
-  let event;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+  let event: Stripe.Event;
 
   try {
-    // Sigurohuni që trupi (req.body) të jetë buffer-i i papërpunuar (raw buffer)
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET!);
+    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
   } catch (err) {
-    console.error('Webhook signature verification failed:', err);
-    return res.status(400).send(`Webhook Error: ${err}`);
+    console.error('Webhook signature verification failed.');
+    // @ts-ignore
+    return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // Handle the event
+  // Trajto ngjarjen
   switch (event.type) {
     case 'payment_intent.succeeded':
-      const paymentIntent = event.data.object as Stripe.PaymentIntent; // Përdorim tipin Stripe
+      const paymentIntent = event.data.object as Stripe.PaymentIntent; 
       await handleSuccessfulPayment(paymentIntent);
       break;
     default:
       console.log(`Unhandled event type: ${event.type}`);
   }
 
-  res.json({received: true});
+  // Kthe përgjigje 200 për Stripe
+  res.json({ received: true });
 });
 
+// ----------------------------------------------------------------------------------
+// Funksioni KRYESOR: Përditëson Supabase pas Pagesës së Sukseshme
+// ----------------------------------------------------------------------------------
 async function handleSuccessfulPayment(paymentIntent: Stripe.PaymentIntent) {
   try {
-    // metadata vjen si {[key: string]: string}
-    const { user_id, package_type, views_count, campaign_id } = paymentIntent.metadata;
+    const { user_id, views_count, campaign_id } = paymentIntent.metadata;
 
-    // Update payment status
+    // 1. Përditëso statusin e pagesës
     await supabase
       .from('payments')
       .update({ 
         status: 'completed',
-        completed_at: new Date().toISOString()
+        completed_at: new Date().toISOString(),
+        stripe_latest_charge_id: paymentIntent.latest_charge as string // ruaj charge id
       })
       .eq('stripe_payment_intent_id', paymentIntent.id);
 
-    // If there's a campaign_id, activate the campaign
+    // 2. Aktivizo fushatën e reklamave
     if (campaign_id) {
       await supabase
         .from('ad_campaigns')
         .update({
-          status: 'active',
-          activated_at: new Date().toISOString()
+          status: 'active', // ✅ Kjo është kritike
+          activated_at: new Date().toISOString(),
+          // Mund të ruash edhe PIID në fushatë për gjurmim
+          stripe_payment_intent_id: paymentIntent.id
         })
         .eq('id', campaign_id);
     }
 
-    console.log(`Payment successful for user ${user_id}, views: ${views_count}`);
+    console.log(`Payment successful: Campaign ${campaign_id} activated.`);
 
   } catch (error) {
     console.error('Error handling successful payment:', error);
   }
 }
 
-export default router;
+export default paymentsRouter;
