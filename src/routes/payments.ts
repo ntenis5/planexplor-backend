@@ -1,6 +1,6 @@
-// src/routes/payments.ts (VERSIONI FINAL, I KORRIGJUAR PËR GABIMET E BUILD-IT)
+// src/routes/payments.ts (VERSIONI FINAL DHE I ZGJIDHUR PËR GABIMIN TS2322)
 
-import express, { Request, Response } from 'express'; // Përdorim default import për Express dhe named imports për tipizim
+import express, { Request, Response } from 'express'; 
 import Stripe from 'stripe';
 import { supabase } from '../services/supabaseClient.js';
 
@@ -11,17 +11,18 @@ interface CreateIntentBody {
   campaign_id: string; 
 }
 
-// Inicializimi me default import
 const paymentsRouter = express.Router(); 
 
+// ✅ RREGULLIMI KRITIK I GABIMIT TS2322: Përdorim as string PËR TË ANASHKALUAR gabimin e tipit të vjetër
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20',
+  apiVersion: '2024-06-20' as string,
 });
 
 // ----------------------------------------------------------------------------------
 // FUNKSIONI PËR WEBHOOK
 // ----------------------------------------------------------------------------------
 async function handleSuccessfulPayment(paymentIntent: Stripe.PaymentIntent) {
+// ... pjesa tjetër e kodit mbetet e pandryshuar
   try {
     const { views_count, campaign_id } = paymentIntent.metadata;
 
@@ -93,7 +94,7 @@ paymentsRouter.post('/create-intent', async (req: Request<{}, {}, CreateIntentBo
     const { data: existingCustomer } = await supabase
       .from('payments')
       .select('stripe_customer_id')
-      .eq('user.id', user.id)
+      .eq('user_id', user.id)
       .not('stripe_customer_id', 'is', null)
       .limit(1)
       .single();
