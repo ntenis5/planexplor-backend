@@ -8,13 +8,13 @@ import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 
 // Importet e rrugëve (routers)
-import geolocationRoutes from './routes/geolocation'; // Router-i i hartës
+import geolocationRoutes from './routes/geolocation'; 
 import authRoutes from './routes/auth';
 import adsRoutes from './routes/ads';
 import paymentsRoutes from './routes/payments';
 import affiliateRoutes from './routes/affiliate';
 
-import { initializeCache } from './services/cacheService'; // Inicializon Supabase
+import { initializeCache } from './services/cacheService'; // Inicializon Supabase dhe Cron Jobs
 
 dotenv.config();
 
@@ -32,10 +32,10 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Rate limiting
+// Rate limiting (Kufizimi i Kërkesave)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minuta
-  max: 100, // 100 kërkesa për 15 minuta
+  max: 100, 
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -43,11 +43,10 @@ app.use(limiter);
 
 // --- Routes ---
 
-// ✅ Rruga e Geolocation (Harta)
-// Frontend-i thërret: /api/geolocation/search ose /api/geolocation/reverse-geocode
+// ✅ Rruga e Geolocation (Harta) - E aksesueshme në /api/geolocation/
 app.use('/api/geolocation', geolocationRoutes); 
 
-// Rrugët e tjera mbeten si me parë
+// Rrugët e tjera 
 app.use('/api/auth', authRoutes);
 app.use('/api/ads', adsRoutes);
 app.use('/api/payments', paymentsRoutes);
@@ -62,7 +61,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Inicializon lidhjen e Supabase në start (Nëse cacheService ka logjikën)
+// Initialize cache on startup (Lidh Supabase, pastron cache-in e skaduar dhe vendos Cron Jobs)
 initializeCache(); 
 
 app.listen(PORT, () => {
