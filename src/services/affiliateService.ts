@@ -1,6 +1,9 @@
+// src/services/affiliateService.ts (VERSIONI FINAL I RREGULLUAR)
+
 import axios from 'axios';
-import { CacheService } from './cacheService';
-import { supabase } from './supabaseClient';
+// ✅ RREGULLUAR: Shtuar .js
+import { CacheService } from './cacheService.js';
+import { supabase } from './supabaseClient.js'; 
 
 interface SearchParams {
   category: 'all' | 'hotel' | 'flight' | 'package';
@@ -41,6 +44,7 @@ export class AffiliateService {
   private cacheService: CacheService;
 
   constructor() {
+    // Kujdes: Sigurohuni që klasa CacheService të importohet me .js në krye
     this.cacheService = CacheService.getInstance();
   }
 
@@ -62,6 +66,7 @@ export class AffiliateService {
     return this.filterResults(allResults, params);
   }
 
+  // ... (Të gjitha funksionet private, logjika e filtirmt, dhe mock API mbeten të pandryshuara) ...
   private generateCacheKey(params: SearchParams): string {
     return `search_${JSON.stringify(params)}`;
   }
