@@ -1,4 +1,4 @@
-// src/app.ts (VERSIONI FINAL I RREGULLUAR)
+// src/app.ts (VERSIONI FINAL)
 
 import express from 'express';
 import cors from 'cors';
@@ -7,16 +7,12 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 
-// ⚠️ RREGULLIMI: SHTOHET .js NË TË GJITHA IMPORTET RELATIVE
-
 import geolocationRoutes from './routes/geolocation.js'; 
 import authRoutes from './routes/auth.js';
 import adsRoutes from './routes/ads.js';
 import paymentsRoutes from './routes/payments.js';
 import affiliateRoutes from './routes/affiliate.js';
-
-// ✅ IMPORT I RI: Rruga për Feed-in e ri të reklamave
-import feedRoutes from './routes/feed.js';
+import feedRoutes from './routes/feed.js'; // Rruga e Feed-it
 
 import { initializeCache } from './services/cacheService.js'; 
 
@@ -47,15 +43,13 @@ app.use(limiter);
 
 // --- Routes ---
 
-// Rrugët përdorin zgjatimin .js siç kërkohet nga 'nodenext'
 app.use('/api/geolocation', geolocationRoutes); 
-
 app.use('/api/auth', authRoutes);
 app.use('/api/ads', adsRoutes);
 app.use('/api/payments', paymentsRoutes);
 app.use('/api/affiliate', affiliateRoutes);
 
-// ✅ PËRDORIMI I RI: Endpoint-i /api/feed-posts
+// Lidh rrugët e Feed-it, p.sh., /api/feed-posts
 app.use('/api', feedRoutes); 
 
 // Health check
