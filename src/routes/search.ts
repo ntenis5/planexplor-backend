@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express'; 
-import { AffiliateService } from '../services/affiliateService';
-import { CacheService } from '../services/cacheService'; 
+import { AffiliateService } from '../services/affiliateService.js';
+import { CacheService } from '../services/cacheService.js'; 
 
 const affiliateService = new AffiliateService();
 const cacheService = CacheService.getInstance(); 
