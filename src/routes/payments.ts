@@ -1,10 +1,9 @@
-// src/routes/payments.ts (VERSIONI FINAL I CILI DUHET TË KALOJË BUILD-IN)
+// src/routes/payments.ts (VERSIONI FINAL I QËNDRUESHËM)
 
-// Përdorim vetëm një formë importi nga Express
-import { Router, Request, Response, raw } from 'express'; 
+// Importi i plotë i detyrueshëm nga Express, i kombinuar me default import
+import express, { Router, Request, Response } from 'express'; 
 import Stripe from 'stripe';
 import { supabase } from '../services/supabaseClient.js';
-// Importi i plotë i Express nuk duhet, por e lëmë si "raw" funksion
 
 // --- Tipi për trupin e kërkesës POST /create-intent ---
 interface CreateIntentBody {
@@ -20,7 +19,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 });
 
 // ----------------------------------------------------------------------------------
-// FUNKSIONI PËR WEBHOOK (Nga 'payment_intent.succeeded')
+// FUNKSIONI PËR WEBHOOK
 // ----------------------------------------------------------------------------------
 async function handleSuccessfulPayment(paymentIntent: Stripe.PaymentIntent) {
   try {
@@ -151,14 +150,15 @@ paymentsRouter.post('/create-intent', async (req: Request<{}, {}, CreateIntentBo
 
 // ----------------------------------------------------------------------------------
 // ENDPOINT: POST /api/payments/webhook
-// Përdorim raw() siç importuam nga Express.
+// Përdorim express.raw()
 // ----------------------------------------------------------------------------------
-paymentsRouter.post('/webhook', raw({type: 'application/json'}), async (req: Request, res: Response) => {
+paymentsRouter.post('/webhook', express.raw({type: 'application/json'}), async (req: Request, res: Response) => {
   const sig = req.headers['stripe-signature']!;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
   let event: Stripe.Event;
 
   try {
+    // Kujdes: Këtu duhet trupi i papërpunuar (raw body)
     event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
   } catch (err) {
     console.error('Webhook signature verification failed.');
