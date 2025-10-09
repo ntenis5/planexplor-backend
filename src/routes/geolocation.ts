@@ -1,4 +1,4 @@
-// src/routes/geolocation.ts (VERSIONI I RREGULLUAR)
+// src/routes/geolocation.ts
 
 import { Router, Request, Response } from 'express';
 import axios from 'axios';
