@@ -1,20 +1,26 @@
+// src/services/supabaseClient.ts
+
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
+// Përdor SERVICE KEY që keni vendosur në Railway (për operacione të fuqishme të Backend-it)
 const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY!; 
+// Shënim: Kujdes që të keni vendosur edhe SUPABASE_URL.
 
 export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+  // Përdorimi i service_key shmang nevojën për AutoRefreshToken këtu
   auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true
+    autoRefreshToken: false, 
+    persistSession: false,
+    detectSessionInUrl: false
   }
 });
 
 // Database types
+// Ky është një dokumentim i shkëlqyer i skemës së databazës.
 export interface UserProfile {
   id: string;
   username: string;
