@@ -1,18 +1,11 @@
-// tsconfig.json (VERSIONI I RREGULLUAR)
-
 {
   "compilerOptions": {
     "target": "ES2020",
     "lib": ["ES2020"],
-    
-    // ✅ RREGULLIMI KRYESOR: NodeNext i thotë TypeScript-it të përdorë 
-    // rregullat e importimit të Node.js (përfshirë kërkesën për zgjatimin .js në import)
-    "module": "NodeNext", 
+    "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    
     "outDir": "./dist",
     "rootDir": "./src",
-    
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -21,4 +14,4 @@
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
-  }
+}
