@@ -1,27 +1,31 @@
+// src/app.ts
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
-// Importo funksionin direkt si 'handleSearchRequest' (ose cilido qe eshte emri qe doni)
-import handleSearchRequest from './routes/search'; // Importi i ri
+
+// Importet e rrugëve (routers)
+import geolocationRoutes from './routes/geolocation'; // Router-i i hartës
 import authRoutes from './routes/auth';
 import adsRoutes from './routes/ads';
 import paymentsRoutes from './routes/payments';
 import affiliateRoutes from './routes/affiliate';
-import { initializeCache } from './services/cacheService';
+
+import { initializeCache } from './services/cacheService'; // Inicializon Supabase
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
+// --- Middleware për Sigurinë dhe Performancën ---
 app.use(helmet());
 app.use(compression());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000', // URL-ja e Vercel-it
   credentials: true
 }));
 
@@ -30,17 +34,20 @@ app.use(express.urlencoded({ extended: true }));
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000, // 15 minuta
+  max: 100, // 100 kërkesa për 15 minuta
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 app.use(limiter);
 
-// Routes
-// VETEM rruga e search ndryshon:
-// Tani po e perdorni app.post sepse searchRoutes nuk eshte me nje Express Router
-app.post('/api/search', handleSearchRequest); 
+// --- Routes ---
 
-// Rrugët e tjera mbeten si me parë (supozojmë që ato ende eksportojnë router)
+// ✅ Rruga e Geolocation (Harta)
+// Frontend-i thërret: /api/geolocation/search ose /api/geolocation/reverse-geocode
+app.use('/api/geolocation', geolocationRoutes); 
+
+// Rrugët e tjera mbeten si me parë
 app.use('/api/auth', authRoutes);
 app.use('/api/ads', adsRoutes);
 app.use('/api/payments', paymentsRoutes);
@@ -55,11 +62,10 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Initialize cache on startup
-initializeCache();
+// Inicializon lidhjen e Supabase në start (Nëse cacheService ka logjikën)
+initializeCache(); 
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV}`);
 });
-  
