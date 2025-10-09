@@ -1,9 +1,9 @@
-// src/routes/geolocation.ts
+// src/routes/geolocation.ts (VERSIONI I RREGULLUAR)
 
 import { Router, Request, Response } from 'express';
 import axios from 'axios';
-// ✅ Importon funksionet e thjeshta të cache-it
-import { checkCache, saveCache } from '../services/cacheService'; 
+// ✅ U RREGULLUA: Shtuar .js
+import { checkCache, saveCache } from '../services/cacheService.js'; 
 
 const geolocationRouter = Router();
 
@@ -22,7 +22,7 @@ geolocationRouter.get('/search', async (req: Request, res: Response) => {
     }
 
     const cacheKey = `search:${query.toLowerCase()}`;
-    const cachedData = await checkCache(cacheKey); // ✅ Kontrollon Cache
+    const cachedData = await checkCache(cacheKey); 
 
     if (cachedData) {
         return res.json(cachedData); 
@@ -42,7 +42,7 @@ geolocationRouter.get('/search', async (req: Request, res: Response) => {
                 address: results[0].display_name
             };
             
-            await saveCache(cacheKey, result); // ✅ Ruaj në Cache
+            await saveCache(cacheKey, result); 
             return res.json(result);
         } else {
             return res.status(404).json({ lat: null, lng: null, address: 'Nuk u gjet asnjë lokacion' });
@@ -66,7 +66,7 @@ geolocationRouter.get('/reverse-geocode', async (req: Request, res: Response) =>
     }
 
     const cacheKey = `reverse:${lat},${lng}`;
-    const cachedData = await checkCache(cacheKey); // ✅ Kontrollon Cache
+    const cachedData = await checkCache(cacheKey); 
 
     if (cachedData) {
         return res.json(cachedData);
@@ -82,7 +82,7 @@ geolocationRouter.get('/reverse-geocode', async (req: Request, res: Response) =>
         const address = data.display_name || 'Selected Location';
         const result = { lat: lat, lng: lng, address };
 
-        await saveCache(cacheKey, result); // ✅ Ruaj në Cache
+        await saveCache(cacheKey, result); 
         return res.json(result);
 
     } catch (error) {
