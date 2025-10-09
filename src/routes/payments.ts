@@ -12,10 +12,9 @@ interface CreateIntentBody {
 }
 
 const paymentsRouter = express.Router(); 
-
-// ✅ RREGULLIMI KRITIK I GABIMIT TS2322: Përdorim literal string-un '2023-08-16' që kompajlleri pret.
+// Gabimi TS2322 zgjidhet duke përdorur saktësisht këtë version:
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-08-16' as Stripe.LatestApiVersion,
+  apiVersion: '2023-08-16',
 });
 
 // ----------------------------------------------------------------------------------
