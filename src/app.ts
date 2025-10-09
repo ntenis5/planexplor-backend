@@ -8,13 +8,17 @@ import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 
 // ⚠️ RREGULLIMI: SHTOHET .js NË TË GJITHA IMPORTET RELATIVE
+
 import geolocationRoutes from './routes/geolocation.js'; 
 import authRoutes from './routes/auth.js';
 import adsRoutes from './routes/ads.js';
 import paymentsRoutes from './routes/payments.js';
 import affiliateRoutes from './routes/affiliate.js';
 
-import { initializeCache } from './services/cacheService.js'; // Edhe këtu shtohet .js
+// ✅ IMPORT I RI: Rruga për Feed-in e ri të reklamave
+import feedRoutes from './routes/feed.js';
+
+import { initializeCache } from './services/cacheService.js'; 
 
 dotenv.config();
 
@@ -50,6 +54,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/ads', adsRoutes);
 app.use('/api/payments', paymentsRoutes);
 app.use('/api/affiliate', affiliateRoutes);
+
+// ✅ PËRDORIMI I RI: Endpoint-i /api/feed-posts
+app.use('/api', feedRoutes); 
 
 // Health check
 app.get('/health', (req, res) => {
