@@ -1,4 +1,4 @@
-// src/app.ts
+// src/app.ts (VERSIONI FINAL I RREGULLUAR)
 
 import express from 'express';
 import cors from 'cors';
@@ -7,14 +7,14 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 
-// Importet e rrugëve (routers)
-import geolocationRoutes from './routes/geolocation'; 
-import authRoutes from './routes/auth';
-import adsRoutes from './routes/ads';
-import paymentsRoutes from './routes/payments';
-import affiliateRoutes from './routes/affiliate';
+// ⚠️ RREGULLIMI: SHTOHET .js NË TË GJITHA IMPORTET RELATIVE
+import geolocationRoutes from './routes/geolocation.js'; 
+import authRoutes from './routes/auth.js';
+import adsRoutes from './routes/ads.js';
+import paymentsRoutes from './routes/payments.js';
+import affiliateRoutes from './routes/affiliate.js';
 
-import { initializeCache } from './services/cacheService'; // Inicializon Supabase dhe Cron Jobs
+import { initializeCache } from './services/cacheService.js'; // Edhe këtu shtohet .js
 
 dotenv.config();
 
@@ -25,16 +25,16 @@ const PORT = process.env.PORT || 3001;
 app.use(helmet());
 app.use(compression());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000', // URL-ja e Vercel-it
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true
 }));
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Rate limiting (Kufizimi i Kërkesave)
+// Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minuta
+  windowMs: 15 * 60 * 1000, 
   max: 100, 
   standardHeaders: true,
   legacyHeaders: false,
@@ -43,10 +43,9 @@ app.use(limiter);
 
 // --- Routes ---
 
-// ✅ Rruga e Geolocation (Harta) - E aksesueshme në /api/geolocation/
+// Rrugët përdorin zgjatimin .js siç kërkohet nga 'nodenext'
 app.use('/api/geolocation', geolocationRoutes); 
 
-// Rrugët e tjera 
 app.use('/api/auth', authRoutes);
 app.use('/api/ads', adsRoutes);
 app.use('/api/payments', paymentsRoutes);
@@ -61,7 +60,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Initialize cache on startup (Lidh Supabase, pastron cache-in e skaduar dhe vendos Cron Jobs)
+// Inicializon lidhjen e Supabase dhe Cron Jobs
 initializeCache(); 
 
 app.listen(PORT, () => {
