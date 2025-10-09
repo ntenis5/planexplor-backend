@@ -1,8 +1,9 @@
-// routes/geolocation.ts
+// src/routes/geolocation.ts
 
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import axios from 'axios';
-import { checkCache, saveCache } from '../services/cacheService'; // Këto funksione duhet të importohen nga cacheService
+// ✅ Importon funksionet e thjeshta të cache-it
+import { checkCache, saveCache } from '../services/cacheService'; 
 
 const geolocationRouter = Router();
 
@@ -11,10 +12,9 @@ const NOMINATIM_REVERSE_URL = process.env.NOMINATIM_REVERSE_URL || 'https://nomi
 const NOMINATIM_SEARCH_URL = process.env.NOMINATIM_SEARCH_URL || 'https://nominatim.openstreetmap.org/search';
 
 // ----------------------------------------------------------------------------------
-// 1. ENDPOINT: GET /api/geolocation/search (Geocoding)
-// Frontend-i thërret: /api/geolocation/search?query=Tirana
+// 1. ENDPOINT: GET /api/geolocation/search (Geocoding: Adresa -> Koordinatat)
 // ----------------------------------------------------------------------------------
-geolocationRouter.get('/search', async (req, res) => {
+geolocationRouter.get('/search', async (req: Request, res: Response) => {
     const { query } = req.query;
 
     if (!query || typeof query !== 'string') {
@@ -22,7 +22,7 @@ geolocationRouter.get('/search', async (req, res) => {
     }
 
     const cacheKey = `search:${query.toLowerCase()}`;
-    const cachedData = await checkCache(cacheKey); // Kontrollo Supabase
+    const cachedData = await checkCache(cacheKey); // ✅ Kontrollon Cache
 
     if (cachedData) {
         return res.json(cachedData); 
@@ -42,7 +42,7 @@ geolocationRouter.get('/search', async (req, res) => {
                 address: results[0].display_name
             };
             
-            await saveCache(cacheKey, result); 
+            await saveCache(cacheKey, result); // ✅ Ruaj në Cache
             return res.json(result);
         } else {
             return res.status(404).json({ lat: null, lng: null, address: 'Nuk u gjet asnjë lokacion' });
@@ -56,10 +56,9 @@ geolocationRouter.get('/search', async (req, res) => {
 
 
 // ----------------------------------------------------------------------------------
-// 2. ENDPOINT: GET /api/geolocation/reverse-geocode (Reverse Geocoding)
-// Frontend-i thërret: /api/geolocation/reverse-geocode?lat=41.32&lng=19.81
+// 2. ENDPOINT: GET /api/geolocation/reverse-geocode (Reverse Geocoding: Koordinatat -> Adresa)
 // ----------------------------------------------------------------------------------
-geolocationRouter.get('/reverse-geocode', async (req, res) => {
+geolocationRouter.get('/reverse-geocode', async (req: Request, res: Response) => {
     const { lat, lng } = req.query;
 
     if (!lat || !lng || typeof lat !== 'string' || typeof lng !== 'string') {
@@ -67,7 +66,7 @@ geolocationRouter.get('/reverse-geocode', async (req, res) => {
     }
 
     const cacheKey = `reverse:${lat},${lng}`;
-    const cachedData = await checkCache(cacheKey); // Kontrollo Supabase
+    const cachedData = await checkCache(cacheKey); // ✅ Kontrollon Cache
 
     if (cachedData) {
         return res.json(cachedData);
@@ -83,7 +82,7 @@ geolocationRouter.get('/reverse-geocode', async (req, res) => {
         const address = data.display_name || 'Selected Location';
         const result = { lat: lat, lng: lng, address };
 
-        await saveCache(cacheKey, result);
+        await saveCache(cacheKey, result); // ✅ Ruaj në Cache
         return res.json(result);
 
     } catch (error) {
