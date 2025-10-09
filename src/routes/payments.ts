@@ -1,9 +1,9 @@
-// src/routes/payments.ts (VERSIONI ABSOLUT FINAL DHE I KONTROLLUAR)
+// src/routes/payments.ts (VERSIONI FINAL I KORRIGJUAR PËR GABIMIN E FUNDIT)
 
-import { Router, Request, Response } from 'express'; 
+import { Router, Request, Response } from 'express'; // SHTOJMË TË GJITHË KOMPONENTËT E NEVOJSHËM
+import express from 'express'; // SHTOJMË EDHE KËTË PËR MIDDLEWARE TË RAW
 import Stripe from 'stripe';
-import { supabase } from '../services/supabaseClient.js';
-import express from 'express'; // Shto Express siç duhet
+import { supabase } from '../services/supabaseClient.js'; 
 
 // --- Tipi për trupin e kërkesës POST /create-intent ---
 interface CreateIntentBody {
@@ -19,14 +19,12 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 });
 
 // ----------------------------------------------------------------------------------
-// FUNKSIONI PËR WEBHOOK: Përditëson Supabase pas Pagesës së Sukseshme
-// Kjo është nxjerrë si funksion i veçantë për të shmangur gabimet e scope-it
+// FUNKSIONI PËR WEBHOOK
 // ----------------------------------------------------------------------------------
 async function handleSuccessfulPayment(paymentIntent: Stripe.PaymentIntent) {
   try {
     const { views_count, campaign_id } = paymentIntent.metadata;
 
-    // 1. Përditëso statusin e pagesës
     await supabase
       .from('payments')
       .update({ 
@@ -36,7 +34,6 @@ async function handleSuccessfulPayment(paymentIntent: Stripe.PaymentIntent) {
       })
       .eq('stripe_payment_intent_id', paymentIntent.id);
 
-    // 2. Aktivizo fushatën e reklamave
     if (campaign_id) {
       await supabase
         .from('ad_campaigns')
@@ -167,7 +164,6 @@ paymentsRouter.post('/webhook', express.raw({type: 'application/json'}), async (
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // Trajto ngjarjen
   if (event.type === 'payment_intent.succeeded') {
       const paymentIntent = event.data.object as Stripe.PaymentIntent; 
       await handleSuccessfulPayment(paymentIntent);
