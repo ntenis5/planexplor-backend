@@ -13,16 +13,15 @@ interface CreateIntentBody {
 
 const paymentsRouter = express.Router(); 
 
-// ✅ RREGULLIMI KRITIK I GABIMIT TS2322: Përdorim as string PËR TË ANASHKALUAR gabimin e tipit të vjetër
+// ✅ RREGULLIMI KRITIK I GABIMIT TS2322: Përdorim literal string-un '2023-08-16' që kompajlleri pret.
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20' as string,
+  apiVersion: '2023-08-16' as Stripe.LatestApiVersion,
 });
 
 // ----------------------------------------------------------------------------------
 // FUNKSIONI PËR WEBHOOK
 // ----------------------------------------------------------------------------------
 async function handleSuccessfulPayment(paymentIntent: Stripe.PaymentIntent) {
-// ... pjesa tjetër e kodit mbetet e pandryshuar
   try {
     const { views_count, campaign_id } = paymentIntent.metadata;
 
@@ -151,7 +150,6 @@ paymentsRouter.post('/create-intent', async (req: Request<{}, {}, CreateIntentBo
 
 // ----------------------------------------------------------------------------------
 // ENDPOINT: POST /api/payments/webhook
-// Përdorim express.raw()
 // ----------------------------------------------------------------------------------
 paymentsRouter.post('/webhook', express.raw({type: 'application/json'}), async (req: Request, res: Response) => {
   const sig = req.headers['stripe-signature']!;
