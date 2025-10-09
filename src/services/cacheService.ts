@@ -1,13 +1,14 @@
-// src/services/cacheService.ts
+// src/services/cacheService.ts (VERSIONI FINAL I RREGULLUAR)
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import * as nodeCron from 'node-cron'; // Përdorim import * siç sugjerohet
-// import { updateAffiliateData } from './affiliateService'; // Supozohet që kjo funksionon
+import * as nodeCron from 'node-cron'; 
+// ✅ RREGULLUAR: Shtuar .js te importi i affiliateService nese do te perdoret me vone
+// import { updateAffiliateData } from './affiliateService.js'; 
 
 let supabase: SupabaseClient | null = null;
 
-// Cache search results for 6 hours (në milisekonda)
-const CACHE_DURATION = 6 * 60 * 60 * 1000;
+// Koha e parazgjedhur e skadencës së cache-it (6 orë në milisekonda)
+const DEFAULT_CACHE_DURATION_MS = 6 * 60 * 60 * 1000;
 
 // Inicializon lidhjen me Supabase
 const setupSupabase = (): void => {
@@ -19,6 +20,7 @@ const setupSupabase = (): void => {
         return;
     }
     
+    // Kujdes: Këtu duhet të përdorni SUPABASE_SERVICE_KEY për shkrim nëse RLS është aktiv
     supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     console.log('✅ Supabase Client i inicializuar.');
 };
@@ -45,11 +47,11 @@ export class CacheService {
     if (!supabase) return null;
 
     const { data, error } = await supabase
-      .from('search_cache') // Kjo tabelë duhet të jetë krijuar në DB
-      .select('result_data') // Kujdes: Ne përdorim 'result_data' në këtë version
+      .from('search_cache')
+      .select('result_data')
       .eq('key', key)
       .gt('expires_at', new Date().toISOString())
-      .maybeSingle(); // Përdorim maybeSingle për një rresht
+      .maybeSingle(); 
 
     if (error) {
       console.error('Supabase Cache Read Error:', error.message);
@@ -62,8 +64,14 @@ export class CacheService {
     return data.result_data;
   }
 
-  async setToCache(key: string, data: any): Promise<void> {
-    const expiresAt = new Date(Date.now() + CACHE_DURATION);
+  // ✅ RREGULLIMI KRYESOR: SHTOHET ttlInSeconds OPISONAL
+  async setToCache(key: string, data: any, ttlInSeconds?: number): Promise<void> {
+    // Përdor TTL të dhënë, përndryshe përdor default
+    const durationMs = ttlInSeconds 
+      ? ttlInSeconds * 1000 
+      : DEFAULT_CACHE_DURATION_MS; 
+      
+    const expiresAt = new Date(Date.now() + durationMs);
 
     // 1. Ruaj në Cache-in In-memory
     this.cache.set(key, data);
@@ -75,7 +83,7 @@ export class CacheService {
       .from('search_cache')
       .upsert({
         key,
-        result_data: data, // Kujdes: Përdorim 'result_data' për të qenë konsistent me getFromCache
+        result_data: data,
         expires_at: expiresAt.toISOString(),
         last_updated: new Date().toISOString()
       }, { onConflict: 'key' });
@@ -107,11 +115,14 @@ export async function initializeCache() {
   // Pastron cache-in e skaduar në start
   await cacheService.clearExpiredCache();
   
-  // Update affiliate data every 6 hours (Nëse e keni këtë logjikë)
+  // Update affiliate data every 6 hours 
   nodeCron.schedule('0 */6 * * *', async () => {
     console.log('🔄 Updating affiliate cache...');
     try {
-      // await updateAffiliateData(); // Thirrja juaj
+      // Këtu do të importohet updateAffiliateData
+      // Nëse e thirrni ketu, duhet te rregullohet importi ne fillim:
+      // const { updateAffiliateData } = await import('./affiliateService.js');
+      // await updateAffiliateData(); 
       console.log('✅ Affiliate cache updated successfully');
     } catch (error) {
       console.error('❌ Failed to update affiliate cache:', error);
@@ -126,13 +137,14 @@ export async function initializeCache() {
 
 
 // --- WRAPPER FUNKSIONET PËR ROUTER ---
-// Këto funksione u mundësojnë router-ave të përdorin shërbimin e cache-it pa klasë.
 const cacheServiceInstance = CacheService.getInstance();
 
 export async function checkCache(key: string): Promise<any> {
     return cacheServiceInstance.getFromCache(key);
 }
 
-export async function saveCache(key: string, data: any): Promise<void> {
-    return cacheServiceInstance.setToCache(key, data);
-}
+// ✅ RREGULLIMI KRYESOR: SHTOHET ARGUMENTI OPSIONAL ttlInSeconds
+export async function saveCache(key: string, data: any, ttlInSeconds?: number): Promise<void> {
+    // Wrapper-i kalon argumentin e tretë te setToCache
+    return cacheServiceInstance.setToCache(key, data, ttlInSeconds);
+        }
