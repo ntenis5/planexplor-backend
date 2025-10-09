@@ -1,7 +1,7 @@
-// src/services/affiliateService.ts (VERSIONI FINAL I RREGULLUAR)
+// src/services/affiliateService.ts (VERSIONI FINAL)
 
 import axios from 'axios';
-// ✅ RREGULLUAR: Shtuar .js
+// ✅ Importet me .js janë korrekte
 import { CacheService } from './cacheService.js';
 import { supabase } from './supabaseClient.js'; 
 
@@ -63,13 +63,14 @@ export class AffiliateService {
     const allResults = await this.fetchFromAllPartners(params);
     
     // Cache the results
-    // ✅ RREGULLUAR: Shtuar argumenti i tretë (TTL)
+    // ✅ THIRRJA E CACHE-IT ME TTL FUNKSIONALE
     await this.cacheService.setToCache(cacheKey, allResults, SEARCH_CACHE_TTL_SECONDS);
     
     return this.filterResults(allResults, params);
   }
 
-  // ... (Të gjitha funksionet private dhe mock API mbeten të pandryshuara) ...
+  // --- Funksionet private ---
+
   private generateCacheKey(params: SearchParams): string {
     return `search_${JSON.stringify(params)}`;
   }
@@ -80,7 +81,6 @@ export class AffiliateService {
 
     for (const partner of partners) {
       try {
-        // Kjo duhet zëvendësuar me thirrjet e vërteta të axios kur të keni çelësat
         const results = await this.fetchFromPartner(partner, params);
         allResults.push(...results);
       } catch (error) {
@@ -164,7 +164,7 @@ export class AffiliateService {
     return score;
   }
 
-  // Mock API implementations - replace with real API calls
+  // Mock API implementations - mbeten të pandryshuara
   private async mockBookingAPI(params: SearchParams): Promise<SearchResult[]> {
     return [
       {
@@ -184,7 +184,7 @@ export class AffiliateService {
       }
     ];
   }
-
+  // ... (API-të e tjera Mock) ...
   private async mockAirbnbAPI(params: SearchParams): Promise<SearchResult[]> {
     return [
       {
@@ -259,11 +259,10 @@ export async function updateAffiliateData(): Promise<void> {
       check_out: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       user_location: { lat: 41.3275, lng: 19.8187, address: 'Tirana, Albania' }
     }
-    // Add more popular searches...
   ];
 
   for (const search of popularSearches) {
-    // Këtu i shërben kërkesa e Cache-it pa TTL sepse është një cron-job
+    // Kërkesa e Cache-it pa TTL sepse kryhet nga një cron-job
     await affiliateService.search(search); 
   }
-}
+  }
