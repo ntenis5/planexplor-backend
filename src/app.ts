@@ -1,7 +1,7 @@
-// src/app.ts (VERSIONI TS-KOMPATIBËL PËR CORS)
+// src/app.ts (VERSIONI MË I FUNDIT DHE I STABILIZUAR TS)
 
 import express from 'express';
-import cors from 'cors'; // Nuk ka nevojë për CorsOptions
+import cors from 'cors'; 
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
@@ -21,26 +21,22 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// --- KONFIGURIMI I KORRIGJUAR I CORS PËR STABILITETIN E TS ---
+// --- KONFIGURIMI KORRIGJUAR I CORS (PËR STABILITETIN E TS) ---
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
 
-// Krijon një listë origjinash të lejuara bazuar në FRONTEND_URL
+// Krijon listën e plotë të origjinave të lejuara (LIVE URL + Localhost)
 const allowedOrigins = [
-  // 1. URL-ja kryesore e deploy-uar (e marrë nga variabla e mjedisit)
   FRONTEND_URL,
-  // 2. URL-ja lokale e Front-end-it (përdorur nga Vite)
-  'http://localhost:5173',
-  // 3. Porti tjetër lokal (nëse përdoret)
+  'http://localhost:5173', 
   'http://localhost:3000' 
-].filter(url => url); // Filtroni çdo vlerë null/undefined
+].filter(url => url); 
 
 const corsOptions = {
-  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-    // Lejo kërkesat pa origjinë (p.sh., Postman, kërkesat e serverit)
+  // Përdorim funksionin e deklaruar në vend të funksionit shigjetë për të shmangur gabimet e TS
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
     if (!origin) return callback(null, true);
 
-    // Lejo çdo origjinë në listën e lejuar
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -102,11 +98,10 @@ eof
 
 ---
 
-## 🚀 Hapi i Fundit Për Deploy
+## 🏁 Detyra e Deploy-it
 
-1.  **Back-end (Railway):** Zëvendësoni skedarin tuaj **`src/app.ts`** me kodin e mësipërm.
-2.  **Variablat e Mjedisit (Railway):** Kthejeni atë në **`FRONTEND_URL`** (njëjës) nëse e kishit ndryshuar në `FRONTEND_URLS`. Vendosni vlerën e deploy-imit të Vercel-it:
+1.  **Back-end (Railway):** Zëvendësoni **`src/app.ts`** me kodin e mësipërm.
+2.  **Variablat e Mjedisit (Railway):** Konfirmoni që keni vendosur **`FRONTEND_URL`** (njëjës) me domenin e deploy-uar të Vercel-it:
     ```
     FRONTEND_URL=https://planexplor-frontend.vercel.app
 
-  
