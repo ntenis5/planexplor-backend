@@ -1,4 +1,4 @@
-// src/app.ts (VERSIONI MË I FUNDIT DHE MË I STABILIZUAR TS PËR CORS)
+// src/app.ts (VERSIONI PËRFUNDIMTAR DHE I STABILIZUAR TS)
 
 import express from 'express';
 import cors from 'cors'; 
@@ -21,22 +21,24 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// --- KONFIGURIMI I THJESHTË I CORS (I DËSHMUAR I STABILIZUAR NGA TS) ---
+// --- KONFIGURIMI I QËNDRUESHËM I CORS ---
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
 
 // Krijon listën e plotë të origjinave të lejuara (LIVE URL + Localhost)
-// Kjo listë përdoret direkt si vlerë "origin" në opsionet e CORS, 
-// duke shmangur funksionin e ndërlikuar që dështonte
+// Dhe i thotë Typescript-it se kjo është një array stringjesh (as string[])
 const allowedOrigins = [
   FRONTEND_URL,
   'http://localhost:5173', 
   'http://localhost:3000' 
-].filter(url => url); 
+].filter((url): url is string => !!url) as string[]; // Filitron 'undefined' dhe forcon tipin
+
+// Nëse asnjë URL e Front-end-it nuk është vendosur (vetëm lokal), lejojmë të gjitha origjinat.
+const corsOrigin = allowedOrigins.length > 0 ? allowedOrigins : '*';
 
 const corsOptions = {
-  // Përdorimi i një array-i stringjesh në vend të një funksioni
-  origin: allowedOrigins, 
+  // Përdorim listën e pastër të stringjeve ose '*'
+  origin: corsOrigin, 
   credentials: true,
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   optionsSuccessStatus: 200
@@ -86,3 +88,4 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV}`);
 });
+  
