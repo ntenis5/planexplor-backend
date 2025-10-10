@@ -1,17 +1,92 @@
-// src/services/travelpayoutsService.js
+// src/services/travelpayoutsService.ts
 import axios from 'axios';
 
+// Interfaces për të dhënat e fluturimeve
+interface FlightSearchParams {
+  origin: string;
+  destination: string;
+  departDate: string;
+  returnDate?: string;
+  adults?: number;
+  children?: number;
+  infants?: number;
+}
+
+interface FlightData {
+  id?: string;
+  origin: string;
+  destination: string;
+  value?: number;
+  price?: number;
+  currency?: string;
+  airline?: string;
+  flight_number?: string;
+  depart_date?: string;
+  return_date?: string;
+  duration?: number;
+  transfers?: number;
+  adults?: number;
+  children?: number;
+  infants?: number;
+  departure_at?: string;
+  return_at?: string;
+}
+
+interface FlightResult {
+  id: string;
+  origin: string;
+  destination: string;
+  departureDate: string;
+  returnDate?: string;
+  price: number;
+  currency: string;
+  airline?: string;
+  flightNumber?: string;
+  duration?: number;
+  transfers?: number;
+  deepLink: string;
+  lastUpdate: string;
+}
+
+interface CheapFlight {
+  destination: string;
+  price: number;
+  airline?: string;
+  flightNumber?: string;
+  departureDate?: string;
+  returnDate?: string;
+  transfers?: number;
+  deepLink: string;
+}
+
+interface Suggestion {
+  destination: string;
+  price: number;
+  airline?: string;
+  departureDate?: string;
+}
+
+interface ApiResponse {
+  data?: any;
+}
+
 export class TravelPayoutsService {
+  private baseUrl: string;
+  private token: string;
+  private marker: string;
+  private locale: string;
+  private currency: string;
+
   constructor() {
-    this.baseUrl = process.env.TRAVELPAYOUTS_BASE_URL;
-    this.token = process.env.TRAVELPAYOUTS_API_TOKEN;
-    this.marker = process.env.TRAVELPAYOUTS_MARKER;
+    this.baseUrl = process.env.TRAVELPAYOUTS_BASE_URL || '';
+    this.token = process.env.TRAVELPAYOUTS_API_TOKEN || '';
+    this.marker = process.env.TRAVELPAYOUTS_MARKER || '';
     this.locale = process.env.TRAVELPAYOUTS_LOCALE || 'en';
     this.currency = process.env.TRAVELPAYOUTS_CURRENCY || 'eur';
   }
 
   // 🔍 KËRKIM I FLUTURIMEVE
-  async searchFlights(params) {
+  async searchFlights(params: FlightSearchParams): Promise<FlightResult[]> {
     const {
       origin,
       destination,
@@ -39,33 +114,33 @@ export class TravelPayoutsService {
       });
 
       return this.formatFlightResults(response.data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('TravelPayouts API Error:', error.response?.data || error.message);
       throw new Error('Failed to fetch flights data');
     }
   }
 
   // 📊 FLUTURIME MË TË LIRA
-  async getCheapestFlights(origin, destination) {
+  async getCheapestFlights(origin: string, destination?: string): Promise<CheapFlight[]> {
     try {
       const response = await axios.get(`${this.baseUrl}/v1/prices/cheap`, {
         params: {
           currency: this.currency,
           origin: origin.toUpperCase(),
-          destination: destination.toUpperCase(),
+          destination: destination?.toUpperCase(),
           token: this.token
         }
       });
 
       return this.formatCheapFlights(response.data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('TravelPayouts Cheap Flights Error:', error);
       throw error;
     }
   }
 
   // 🗺️ SUGJERIME PËR DESTINACIONE
-  async getDestinationSuggestions(query) {
+  async getDestinationSuggestions(query: string): Promise<Suggestion[]> {
     try {
       const response = await axios.get(`${this.baseUrl}/v2/city-directions`, {
         params: {
@@ -76,14 +151,14 @@ export class TravelPayoutsService {
       });
 
       return this.formatSuggestions(response.data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('TravelPayouts Suggestions Error:', error);
       return [];
     }
   }
 
   // 🏙️ LISTA E AEROPORTEVE
-  async getAirports() {
+  async getAirports(): Promise<any[]> {
     try {
       const response = await axios.get(`${this.baseUrl}/data/en/airports.json`, {
         params: {
@@ -91,25 +166,25 @@ export class TravelPayoutsService {
         }
       });
 
-      return response.data;
-    } catch (error) {
+      return response.data || [];
+    } catch (error: any) {
       console.error('TravelPayouts Airports Error:', error);
       return [];
     }
   }
 
   // 🔄 FORMATIMI I REZULTATEVE
-  formatFlightResults(data) {
+  private formatFlightResults(data: ApiResponse): FlightResult[] {
     if (!data.data) return [];
 
-    return data.data.map(flight => ({
-      id: flight.id,
+    return data.data.map((flight: FlightData) => ({
+      id: flight.id || `${flight.origin}-${flight.destination}-${flight.depart_date}`,
       origin: flight.origin,
       destination: flight.destination,
-      departureDate: flight.depart_date,
+      departureDate: flight.depart_date || '',
       returnDate: flight.return_date,
-      price: flight.value,
-      currency: flight.currency,
+      price: flight.value || flight.price || 0,
+      currency: flight.currency || this.currency,
       airline: flight.airline,
       flightNumber: flight.flight_number,
       duration: flight.duration,
@@ -119,14 +194,14 @@ export class TravelPayoutsService {
     }));
   }
 
-  formatCheapFlights(data) {
+  private formatCheapFlights(data: ApiResponse): CheapFlight[] {
     if (!data.data) return [];
 
-    const flights = [];
-    Object.entries(data.data).forEach(([destination, flightData]) => {
+    const flights: CheapFlight[] = [];
+    Object.entries(data.data).forEach(([destination, flightData]: [string, any]) => {
       flights.push({
         destination,
-        price: flightData.price,
+        price: flightData.price || 0,
         airline: flightData.airline,
         flightNumber: flightData.flight_number,
         departureDate: flightData.departure_at,
@@ -139,14 +214,14 @@ export class TravelPayoutsService {
     return flights;
   }
 
-  formatSuggestions(data) {
+  private formatSuggestions(data: ApiResponse): Suggestion[] {
     if (!data.data) return [];
 
-    const suggestions = [];
-    Object.entries(data.data).forEach(([destination, info]) => {
+    const suggestions: Suggestion[] = [];
+    Object.entries(data.data).forEach(([destination, info]: [string, any]) => {
       suggestions.push({
         destination,
-        price: info.price,
+        price: info.price || 0,
         airline: info.airline,
         departureDate: info.departure_at
       });
@@ -156,18 +231,18 @@ export class TravelPayoutsService {
   }
 
   // 🔗 GENERO DEEP LINK PËR REZERVIM
-  generateDeepLink(flight) {
+  private generateDeepLink(flight: FlightData): string {
     const baseUrl = 'https://aviasales.tp.st';
     const params = new URLSearchParams({
       origin: flight.origin,
       destination: flight.destination,
-      depart_date: flight.depart_date,
-      return_date: flight.return_date,
-      adults: flight.adults || 1,
-      children: flight.children || 0,
-      infants: flight.infants || 0,
+      depart_date: flight.depart_date || flight.departure_at || '',
+      return_date: flight.return_date || flight.return_at || '',
+      adults: (flight.adults || 1).toString(),
+      children: (flight.children || 0).toString(),
+      infants: (flight.infants || 0).toString(),
       marker: this.marker,
-      with_request: true
+      with_request: 'true'
     });
 
     return `${baseUrl}?${params.toString()}`;
