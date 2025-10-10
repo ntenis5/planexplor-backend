@@ -1,12 +1,13 @@
-// src/app.ts (VERSIONI I PLOTË I RREGULLUAR)
+// src/app.ts (VERSIONI I PLOTË I RREGULLUAR DHE I PËRDITËSUAR)
 
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express'; // Shto NextFunction
 import cors from 'cors'; 
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 
+// --- Importet e Routes ekzistuese ---
 import geolocationRoutes from './routes/geolocation.js'; 
 import authRoutes from './routes/auth.js';
 import adsRoutes from './routes/ads.js';
@@ -14,7 +15,17 @@ import paymentsRoutes from './routes/payments.js';
 import affiliateRoutes from './routes/affiliate.js';
 import feedRoutes from './routes/feed.js'; 
 
+// --- Importet e Routes të reja ---
+import flightsRouter from './routes/flights.js'; // I RI
+import systemAdminRouter from './routes/systemAdmin.js'; // I RI - Admin
+import cacheAdminRouter from './routes/cacheAdmin.js'; // I RI - Admin Cache
+import analyticsRouter from './routes/analyticsDashboard.js'; // I RI - Analitika
+
+// --- Importet e Shërbimeve dhe Middleware ---
 import { initializeCache } from './services/cacheService.js'; 
+import { enhancedCacheService } from './services/enhancedCacheService.js'; // I RI - Shërbim Cache i avancuar
+import { cacheMaintenance } from './services/cacheMaintenance.js'; // I RI - Maintenance Cache
+import analyticsMiddleware from './middleware/analyticsMiddleware.js'; // I RI - Middleware Analitikash
 
 dotenv.config();
 
@@ -25,19 +36,15 @@ const PORT = process.env.PORT || 3000;
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
 
-// Krijon listën e plotë të origjinave të lejuara (LIVE URL + Localhost)
-// Dhe i thotë Typescript-it se kjo është një array stringjesh (as string[])
 const allowedOrigins = [
   FRONTEND_URL,
   'http://localhost:5173', 
   'http://localhost:3000' 
-].filter((url): url is string => !!url) as string[]; // Filitron 'undefined' dhe forcon tipin
+].filter((url): url is string => !!url) as string[];
 
-// Nëse asnjë URL e Front-end-it nuk është vendosur (vetëm lokal), lejojmë të gjitha origjinat.
 const corsOrigin = allowedOrigins.length > 0 ? allowedOrigins : '*';
 
 const corsOptions = {
-  // Përdorim listën e pastër të stringjeve ose '*'
   origin: corsOrigin, 
   credentials: true,
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
@@ -47,7 +54,7 @@ const corsOptions = {
 // --- Middleware për Sigurinë dhe Performancën ---
 app.use(helmet());
 app.use(compression());
-app.use(cors(corsOptions)); // ✅ PËRDORIM KONFIGURIMIN E RI TË CORS
+app.use(cors(corsOptions)); 
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -61,28 +68,39 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// --- Routes ---
+// --- Middleware i Ri ---
+// Shto middleware për tracking automatik
+app.use(analyticsMiddleware); // ✅ SHTIMI I ANALITIKAVE
+
+// --- Routes Ekzistuese dhe të Reja ---
 
 app.use('/api/geolocation', geolocationRoutes); 
 app.use('/api/auth', authRoutes);
 app.use('/api/ads', adsRoutes);
 app.use('/api/payments', paymentsRoutes);
 app.use('/api/affiliate', affiliateRoutes);
-
-// Lidh rrugët e Feed-it, p.sh., /api/feed-posts
 app.use('/api', feedRoutes); 
 
-// ✅ ✅ ✅ ROOT ROUTE - SHUMË E RËNDËSISHME PËR RAILWAY
+// --- Routes të reja të shtuara ---
+app.use('/api/flights', flightsRouter); // ✅ SHTIMI I FLIGHTS
+app.use('/api/admin/system', systemAdminRouter); // ✅ SHTIMI I ADMIN SYSTEM
+app.use('/api/admin/cache', cacheAdminRouter); // ✅ SHTIMI I ADMIN CACHE
+app.use('/api/analytics', analyticsRouter); // ✅ SHTIMI I ANALYTICS DASHBOARD
+
+// --- Endpoints Bazë ---
+
+// ROOT ROUTE - Për Railway/Health Check bazë
 app.get('/', (req, res) => {
   res.status(200).json({ 
     message: '🚀 Placexplor Backend API is running!',
     health: '/health',
+    systemHealth: '/system-health',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV
   });
 });
 
-// Health check
+// Health check bazë
 app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'OK', 
@@ -91,11 +109,52 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Inicializon lidhjen e Supabase dhe Cron Jobs
+// Health check i avancuar (Kontrollon edhe Cache)
+app.get('/system-health', async (req: Request, res: Response) => {
+  try {
+    const health = await enhancedCacheService.getSystemHealth(); // Thërret shërbimin e ri
+    res.json({ 
+      status: 'healthy', 
+      timestamp: new Date().toISOString(),
+      ...health 
+    });
+  } catch (error: any) {
+    // Saktëson tipin e gabimit për aksesin e .message
+    res.status(503).json({ 
+      status: 'unhealthy', 
+      error: error.message || 'Unknown system health error',
+      service: 'EnhancedCacheService'
+    });
+  }
+}); // ✅ SHTIMI I SYSTEM-HEALTH
+
+// --- Global Error Handling ---
+
+// Global error handling për cache
+app.use((error: any, req: Request, res: Response, next: NextFunction) => {
+  if (error.message && (error.message.includes('cache') || error.message.includes('CACHE'))) {
+    console.error('Cache System Error:', error.message);
+    // Provo fallback
+    res.status(500).json({ 
+      error: 'Cache system temporarily unavailable',
+      detail: error.message,
+      fallback: 'using_direct_api'
+    });
+  } else {
+    // Për gabimet e tjera, kalon tek error handler-at e tjerë ose default 500
+    console.error('General Server Error:', error);
+    next(error);
+  }
+}); // ✅ SHTIMI I ERROR HANDLER-IT PËR CACHE
+
+// --- Startimi i Aplikacionit ---
+
+// Inicializon lidhjen e Cache-it dhe Cron Jobs
 initializeCache(); 
+cacheMaintenance.startScheduledCleanup(); // ✅ NIS MAINTENANCE NË STARTUP
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV}`);
-  console.log(`🌐 CORS Allowed Origins:`, allowedOrigins);
+  console.log(`🌐 CORS Allowed Origins:`, allowedOrigins.length > 0 ? allowedOrigins : 'ALL (*)');
 });
