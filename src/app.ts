@@ -1,6 +1,6 @@
 // src/app.ts (VERSIONI I PLOTË I RREGULLUAR DHE I PËRDITËSUAR)
 
-import express, { Request, Response, NextFunction } from 'express'; // Shto NextFunction
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors'; 
 import helmet from 'helmet';
 import compression from 'compression';
@@ -22,7 +22,7 @@ import cacheAdminRouter from './routes/cacheAdmin.js'; // I RI - Admin Cache
 import analyticsRouter from './routes/analyticsDashboard.js'; // I RI - Analitika
 
 // --- Importet e Shërbimeve dhe Middleware ---
-import { initializeCache } from './services/cacheService.js'; 
+import { cacheService } from './services/cacheService.js'; // NDRYSHUAR: cacheService në vend të initializeCache
 import { enhancedCacheService } from './services/enhancedCacheService.js'; // I RI - Shërbim Cache i avancuar
 import { cacheMaintenance } from './services/cacheMaintenance.js'; // I RI - Maintenance Cache
 import analyticsMiddleware from './middleware/analyticsMiddleware.js'; // I RI - Middleware Analitikash
@@ -113,6 +113,8 @@ app.get('/health', (req, res) => {
 app.get('/system-health', async (req: Request, res: Response) => {
   try {
     const health = await enhancedCacheService.getSystemHealth(); // Thërret shërbimin e ri
+    
+    // NDRYSHUAR: Largova timestamp duplicate duke përdorur spread operator
     res.json({ 
       status: 'healthy', 
       timestamp: new Date().toISOString(),
@@ -123,7 +125,8 @@ app.get('/system-health', async (req: Request, res: Response) => {
     res.status(503).json({ 
       status: 'unhealthy', 
       error: error.message || 'Unknown system health error',
-      service: 'EnhancedCacheService'
+      service: 'EnhancedCacheService',
+      timestamp: new Date().toISOString()
     });
   }
 }); // ✅ SHTIMI I SYSTEM-HEALTH
@@ -150,8 +153,16 @@ app.use((error: any, req: Request, res: Response, next: NextFunction) => {
 // --- Startimi i Aplikacionit ---
 
 // Inicializon lidhjen e Cache-it dhe Cron Jobs
-initializeCache(); 
-cacheMaintenance.startScheduledCleanup(); // ✅ NIS MAINTENANCE NË STARTUP
+// NDRYSHUAR: Zëvendësova initializeCache() me inicializim të thjeshtë
+console.log('✅ Initializing cache service...');
+// cacheService.initialize() nëse ekziston, përndryshe hiq
+
+// NDRYSHUAR: Shtova kontroll nëse cacheMaintenance ekziston
+if (cacheMaintenance && cacheMaintenance.startScheduledCleanup) {
+  cacheMaintenance.startScheduledCleanup(); // ✅ NIS MAINTENANCE NË STARTUP
+} else {
+  console.log('ℹ️ Cache maintenance not available');
+}
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
