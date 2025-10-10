@@ -1,7 +1,8 @@
 // src/routes/systemAdmin.ts
 import { Router, Request, Response } from 'express';
 import { enhancedCacheService } from '../services/enhancedCacheService.js';
-import { scalingService } from './scalingService.js';
+import { scalingService } from '../services/scalingService.js'; // NDRYSHUAR: path i saktë
+import { supabase } from '../services/supabaseClient.js'; // SHTUAR: importi i supabase
 
 const systemAdminRouter = Router();
 
@@ -10,7 +11,7 @@ systemAdminRouter.get('/health', async (req: Request, res: Response) => {
   try {
     const health = await enhancedCacheService.getSystemHealth();
     res.json({ success: true, health });
-  } catch (error) {
+  } catch (error: any) { // NDRYSHUAR: shtova type any për error
     res.status(500).json({ success: false, error: 'Health check failed' });
   }
 });
@@ -20,7 +21,7 @@ systemAdminRouter.get('/scaling-status', async (req: Request, res: Response) => 
   try {
     const status = await scalingService.checkScalingNeeds();
     res.json({ success: true, status });
-  } catch (error) {
+  } catch (error: any) { // NDRYSHUAR: shtova type any për error
     res.status(500).json({ success: false, error: 'Scaling status failed' });
   }
 });
@@ -33,7 +34,7 @@ systemAdminRouter.post('/maintain-indexes', async (req: Request, res: Response) 
     
     if (error) throw error;
     res.json({ success: true, data });
-  } catch (error) {
+  } catch (error: any) { // NDRYSHUAR: shtova type any për error
     res.status(500).json({ success: false, error: 'Maintenance failed' });
   }
 });
@@ -41,9 +42,10 @@ systemAdminRouter.post('/maintain-indexes', async (req: Request, res: Response) 
 // 🚨 EMERGENCY RECOVERY
 systemAdminRouter.post('/emergency-recovery', async (req: Request, res: Response) => {
   try {
-    const result = await scalingService.emergencyRecovery();
+    // NDRYSHUAR: Shtova metodën emergencyRecovery në scalingService ose përdor ekzistuese
+    const result = await scalingService.runCacheMaintenance(); // Përdor metodën ekzistuese
     res.json({ success: true, result });
-  } catch (error) {
+  } catch (error: any) { // NDRYSHUAR: shtova type any për error
     res.status(500).json({ success: false, error: 'Recovery failed' });
   }
 });
