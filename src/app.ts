@@ -19,7 +19,7 @@ import { initializeCache } from './services/cacheService.js';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 
 // --- KONFIGURIMI I QËNDRUESHËM I CORS ---
 
