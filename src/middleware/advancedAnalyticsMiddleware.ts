@@ -2,7 +2,17 @@
 import { analyticsService } from '../services/analyticsService.js';
 import { Request, Response, NextFunction } from 'express';
 
-export function advancedAnalyticsMiddleware(req: Request, res: Response, next: NextFunction) {
+// Extended Request interface për session dhe user
+interface AuthenticatedRequest extends Request {
+  session?: {
+    id?: string;
+  };
+  user?: {
+    id?: string;
+  };
+}
+
+export function advancedAnalyticsMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   const startTime = Date.now();
   const originalSend = res.send;
 
@@ -32,4 +42,4 @@ export function advancedAnalyticsMiddleware(req: Request, res: Response, next: N
   };
 
   next();
-}
+      }
