@@ -1,4 +1,4 @@
-// src/app.ts (VERSIONI MË I FUNDIT DHE I STABILIZUAR TS)
+// src/app.ts (VERSIONI MË I FUNDIT DHE MË I STABILIZUAR TS PËR CORS)
 
 import express from 'express';
 import cors from 'cors'; 
@@ -21,11 +21,13 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// --- KONFIGURIMI KORRIGJUAR I CORS (PËR STABILITETIN E TS) ---
+// --- KONFIGURIMI I THJESHTË I CORS (I DËSHMUAR I STABILIZUAR NGA TS) ---
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
 
 // Krijon listën e plotë të origjinave të lejuara (LIVE URL + Localhost)
+// Kjo listë përdoret direkt si vlerë "origin" në opsionet e CORS, 
+// duke shmangur funksionin e ndërlikuar që dështonte
 const allowedOrigins = [
   FRONTEND_URL,
   'http://localhost:5173', 
@@ -33,17 +35,8 @@ const allowedOrigins = [
 ].filter(url => url); 
 
 const corsOptions = {
-  // Përdorim funksionin e deklaruar në vend të funksionit shigjetë për të shmangur gabimet e TS
-  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.error(`CORS denied for: ${origin}`);
-      callback(new Error('Not allowed by CORS'), false);
-    }
-  },
+  // Përdorimi i një array-i stringjesh në vend të një funksioni
+  origin: allowedOrigins, 
   credentials: true,
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   optionsSuccessStatus: 200
