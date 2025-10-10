@@ -1,4 +1,4 @@
-// src/app.ts (VERSIONI PËRFUNDIMTAR DHE I STABILIZUAR TS)
+// src/app.ts (VERSIONI I PLOTË I RREGULLUAR)
 
 import express from 'express';
 import cors from 'cors'; 
@@ -72,6 +72,16 @@ app.use('/api/affiliate', affiliateRoutes);
 // Lidh rrugët e Feed-it, p.sh., /api/feed-posts
 app.use('/api', feedRoutes); 
 
+// ✅ ✅ ✅ ROOT ROUTE - SHUMË E RËNDËSISHME PËR RAILWAY
+app.get('/', (req, res) => {
+  res.status(200).json({ 
+    message: '🚀 Placexplor Backend API is running!',
+    health: '/health',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV
+  });
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.status(200).json({ 
@@ -87,5 +97,5 @@ initializeCache();
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV}`);
+  console.log(`🌐 CORS Allowed Origins:`, allowedOrigins);
 });
-  
