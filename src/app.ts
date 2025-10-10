@@ -1,7 +1,7 @@
 // src/app.ts (VERSIONI TS-KOMPATIBËL PËR CORS)
 
 import express from 'express';
-import cors, { CorsOptions } from 'cors'; // Sigurohu që importon CorsOptions
+import cors from 'cors'; // Nuk ka nevojë për CorsOptions
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
@@ -21,30 +21,31 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// --- CONFIGURIMI I KORRIGJUAR I CORS ---
+// --- KONFIGURIMI I KORRIGJUAR I CORS PËR STABILITETIN E TS ---
 
-// 1. Lexon URL-të e lejuara nga variabla e mjedisit FRONTEND_URLS (e ndarë me presje)
-const frontendUrls: string[] = process.env.FRONTEND_URLS ? 
-  process.env.FRONTEND_URLS.split(',').map(url => url.trim()) : 
-  [];
+const FRONTEND_URL = process.env.FRONTEND_URL;
 
-// 2. Krijon listën e plotë të origjinave të lejuara (përfshin localhost)
-const allowedOrigins: string[] = [
-  ...frontendUrls,
-  'http://localhost:5173', // Vite default
-  'http://localhost:3000' // Ose port tjetër lokal
-].filter(Boolean); // Heq çdo vlerë boshe nëse ndodhet
+// Krijon një listë origjinash të lejuara bazuar në FRONTEND_URL
+const allowedOrigins = [
+  // 1. URL-ja kryesore e deploy-uar (e marrë nga variabla e mjedisit)
+  FRONTEND_URL,
+  // 2. URL-ja lokale e Front-end-it (përdorur nga Vite)
+  'http://localhost:5173',
+  // 3. Porti tjetër lokal (nëse përdoret)
+  'http://localhost:3000' 
+].filter(url => url); // Filtroni çdo vlerë null/undefined
 
-const corsOptions: CorsOptions = {
-  origin: (origin, callback) => {
-    // Lejo kërkesat pa origjinë (p.sh., Postman ose kërkesat nga i njëjti server)
+const corsOptions = {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    // Lejo kërkesat pa origjinë (p.sh., Postman, kërkesat e serverit)
     if (!origin) return callback(null, true);
 
-    // Kontrollon nëse origjina është në listën e lejuar
+    // Lejo çdo origjinë në listën e lejuar
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS: ' + origin));
+      console.error(`CORS denied for: ${origin}`);
+      callback(new Error('Not allowed by CORS'), false);
     }
   },
   credentials: true,
@@ -55,7 +56,7 @@ const corsOptions: CorsOptions = {
 // --- Middleware për Sigurinë dhe Performancën ---
 app.use(helmet());
 app.use(compression());
-app.use(cors(corsOptions)); // ✅ PËRDORIM KORRIGJIMIN E CORS MBI
+app.use(cors(corsOptions)); // ✅ PËRDORIM KONFIGURIMIN E RI TË CORS
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -101,11 +102,11 @@ eof
 
 ---
 
-## 🎯 Hapat e Detyrueshëm Për Ta Bërë Funksional
+## 🚀 Hapi i Fundit Për Deploy
 
-1.  **Back-end (Railway):** Zëvendësoni skedarin tuaj **`src/app.ts`** me versionin e mësipërm (i cili ka sintaksë të saktë TS dhe CORS fleksibël), bëni `git commit` dhe **`git push`**.
-2.  **Variablat e Mjedisit (Railway):** **Kjo është thelbësore.** Sigurohuni që në Railway e keni ndryshuar variablën e vjetër në **`FRONTEND_URLS`** (shumës) dhe e keni vendosur me origjina të ndara me presje (`,') [cite: uploaded:Screenshot_2025-10-10-01-53-35-027_com.android.chrome.jpg]:
+1.  **Back-end (Railway):** Zëvendësoni skedarin tuaj **`src/app.ts`** me kodin e mësipërm.
+2.  **Variablat e Mjedisit (Railway):** Kthejeni atë në **`FRONTEND_URL`** (njëjës) nëse e kishit ndryshuar në `FRONTEND_URLS`. Vendosni vlerën e deploy-imit të Vercel-it:
     ```
-    FRONTEND_URLS="https://planexplor-frontend.vercel.app, http://localhost:5173" 
+    FRONTEND_URL=https://planexplor-frontend.vercel.app
 
-    
+  
