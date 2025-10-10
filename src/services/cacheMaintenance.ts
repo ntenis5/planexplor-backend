@@ -1,5 +1,4 @@
 // src/services/cacheMaintenance.ts
-import { supabase } from './supabaseClient.js';
 import { cacheService } from './cacheService.js';
 
 export class CacheMaintenance {
