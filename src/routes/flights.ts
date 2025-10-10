@@ -1,6 +1,6 @@
 // src/routes/flights.ts
 import { Router, Request, Response } from 'express';
-import { travelPayoutsService } from '../services/travelpayoutsService.js';
+import { travelPayoutsService } from '../services/travelpayoutsService.ts';
 import { enhancedCacheService } from '../services/enhancedCacheService.js';
 
 const flightsRouter = Router();
