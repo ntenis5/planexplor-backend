@@ -7,8 +7,8 @@ const analyticsRouter = Router();
 // 📊 REALTIME DASHBOARD
 analyticsRouter.get('/realtime', async (req: Request, res: Response) => {
   try {
-    // Shtoni metodën getRealtimeDashboard në analyticsService ose përdorni ekzistuese
-    const data = await analyticsService.generateDailyReport(); // Përdorim metodën ekzistuese
+    // Përdorim metodën ekzistuese derisa të shtojmë getRealtimeDashboard
+    const data = await analyticsService.generateDailyReport();
     res.json({ success: true, data });
   } catch (error) {
     console.error('Realtime dashboard error:', error);
@@ -19,8 +19,8 @@ analyticsRouter.get('/realtime', async (req: Request, res: Response) => {
 // 💰 COST ANALYSIS
 analyticsRouter.get('/cost-analysis', async (req: Request, res: Response) => {
   try {
-    // Metodë e re për cost analysis - mund të shtoni në analyticsService
-    const data = await this.getCostAnalysis();
+    // Përdorim funksion lokal derisa të implementohet në shërbim
+    const data = await getCostAnalysis();
     res.json({ success: true, data });
   } catch (error) {
     console.error('Cost analysis error:', error);
@@ -31,8 +31,8 @@ analyticsRouter.get('/cost-analysis', async (req: Request, res: Response) => {
 // 🌍 REGIONAL PERFORMANCE
 analyticsRouter.get('/regional', async (req: Request, res: Response) => {
   try {
-    // Metodë e re për regional performance - mund të shtoni në analyticsService
-    const data = await this.getRegionalPerformance();
+    // Përdorim funksion lokal derisa të implementohet në shërbim
+    const data = await getRegionalPerformance();
     res.json({ success: true, data });
   } catch (error) {
     console.error('Regional performance error:', error);
@@ -62,22 +62,33 @@ analyticsRouter.get('/anomalies', async (req: Request, res: Response) => {
   }
 });
 
-// Metoda ndihmëse për cost analysis
-private async getCostAnalysis(): Promise<any> {
+// Funksione ndihmëse - jo private por të thjeshta
+async function getCostAnalysis(): Promise<any> {
   // Implementimi i thjeshtë - mund të kompleksohet
   return {
     totalCost: 0,
     savings: 0,
-    breakdown: {}
+    breakdown: {
+      geolocation: 0,
+      affiliate: 0,
+      maps: 0
+    }
   };
 }
 
-// Metoda ndihmëse për regional performance
-private async getRegionalPerformance(): Promise<any> {
+async function getRegionalPerformance(): Promise<any> {
   // Implementimi i thjeshtë - mund të kompleksohet
   return {
-    regions: [],
-    performance: {}
+    regions: [
+      { name: 'Europe', performance: 95 },
+      { name: 'North America', performance: 88 },
+      { name: 'Asia', performance: 92 }
+    ],
+    performance: {
+      europe: 95,
+      north_america: 88,
+      asia: 92
+    }
   };
 }
 
