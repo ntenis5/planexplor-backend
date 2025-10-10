@@ -1,44 +1,26 @@
-// src/middleware/advancedAnalyticsMiddleware.ts (VERSION I THJESHTË)
+// src/middleware/advancedAnalyticsMiddleware.ts
 import { analyticsService } from '../services/analyticsService.js';
 import { Request, Response, NextFunction } from 'express';
 
-interface AuthenticatedRequest extends Request {
-  session?: {
-    id?: string;
-  };
-  user?: {
-    id?: string;
-  };
-}
-
-export function advancedAnalyticsMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+export function advancedAnalyticsMiddleware(req: Request, res: Response, next: NextFunction) {
   const startTime = Date.now();
 
-  // Mbivendos res.json për të kapur response time
-  const originalJson = res.json;
-  
-  (res as any).json = function(body: any) {
+  res.on('finish', () => {
     const responseTime = Date.now() - startTime;
-
+    
     const analyticsData = {
-      sessionId: req.session?.id,
-      userId: req.user?.id,
       endpoint: req.path,
       method: req.method,
-      status: (res as any).statusCode,
+      status: res.statusCode,
       responseTime: responseTime,
-      cacheStatus: 'skip', // Default value
+      cacheStatus: 'skip' as 'hit' | 'miss' | 'skip', // ✅ TIPIZUAR SIÇ DUHET
       cacheStrategy: 'default',
       userAgent: req.get('user-agent'),
-      userIp: req.ip,
-      countryCode: req.get('cf-ipcountry') || req.get('x-country-code')
+      userIp: req.ip
     };
 
-    // Logjo në background
     analyticsService.logDetailedRequest(analyticsData).catch(console.error);
-
-    return originalJson.call(this, body);
-  };
+  });
 
   next();
 }
