@@ -1,7 +1,7 @@
-// src/app.ts (VERSIONI FINAL I KORRIGJUAR PËR CORS)
+// src/app.ts (VERSIONI TS-KOMPATIBËL PËR CORS)
 
 import express from 'express';
-import cors from 'cors';
+import cors, { CorsOptions } from 'cors'; // Sigurohu që importon CorsOptions
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
@@ -22,24 +22,25 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // --- CONFIGURIMI I KORRIGJUAR I CORS ---
+
 // 1. Lexon URL-të e lejuara nga variabla e mjedisit FRONTEND_URLS (e ndarë me presje)
-const frontendUrls = process.env.FRONTEND_URLS ? 
+const frontendUrls: string[] = process.env.FRONTEND_URLS ? 
   process.env.FRONTEND_URLS.split(',').map(url => url.trim()) : 
   [];
 
-// 2. Shton localhost-in për zhvillim (5173 është porti standard i Vite)
-const allowedOrigins = [
+// 2. Krijon listën e plotë të origjinave të lejuara (përfshin localhost)
+const allowedOrigins: string[] = [
   ...frontendUrls,
-  'http://localhost:5173',
-  'http://localhost:3000' // Ose çfarëdo që keni përdorur më parë
-];
+  'http://localhost:5173', // Vite default
+  'http://localhost:3000' // Ose port tjetër lokal
+].filter(Boolean); // Heq çdo vlerë boshe nëse ndodhet
 
-const corsOptions = {
+const corsOptions: CorsOptions = {
   origin: (origin, callback) => {
     // Lejo kërkesat pa origjinë (p.sh., Postman ose kërkesat nga i njëjti server)
     if (!origin) return callback(null, true);
 
-    // Kjo lejon të gjitha origjinat e listuara në allowedOrigins
+    // Kontrollon nëse origjina është në listën e lejuar
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -100,12 +101,10 @@ eof
 
 ---
 
-## ⚙️ Hapat e Mbetur
+## 🎯 Hapat e Detyrueshëm Për Ta Bërë Funksional
 
-Tani që keni kodin e rregulluar të Back-end-it, duhet të bëni dy veprime:
-
-1.  **Back-end (Railway):** Zëvendësoni skedarin tuaj **`src/app.ts`** me versionin e mësipërm, bëni `git commit` dhe **`git push`** në Railway.
-2.  **Variablat e Mjedisit (Railway):** Sigurohuni që në konfigurimin e variablave të mjedisit të Back-end-it në Railway, keni vendosur një variabël të quajtur **`FRONTEND_URLS`** me këtë vlerë (përfshini domenin tuaj të Vercel):
+1.  **Back-end (Railway):** Zëvendësoni skedarin tuaj **`src/app.ts`** me versionin e mësipërm (i cili ka sintaksë të saktë TS dhe CORS fleksibël), bëni `git commit` dhe **`git push`**.
+2.  **Variablat e Mjedisit (Railway):** **Kjo është thelbësore.** Sigurohuni që në Railway e keni ndryshuar variablën e vjetër në **`FRONTEND_URLS`** (shumës) dhe e keni vendosur me origjina të ndara me presje (`,') [cite: uploaded:Screenshot_2025-10-10-01-53-35-027_com.android.chrome.jpg]:
     ```
     FRONTEND_URLS="https://planexplor-frontend.vercel.app, http://localhost:5173" 
 
