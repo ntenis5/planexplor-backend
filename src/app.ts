@@ -15,7 +15,7 @@ import affiliateRoutes from './routes/affiliate.js';
 import feedRoutes from './routes/feed.js'; 
 
 // --- Importet e Routes të reja ---
-import flightsRouter from './routes/flights.ts'; // ✅ NDRYSHUAR: .js -> .ts
+import flightsRouter from './routes/flights.js'; // ✅ NDRYSHUAR: .js -> .ts
 import systemAdminRouter from './routes/systemAdmin.js'; 
 import cacheAdminRouter from './routes/cacheAdmin.js'; 
 import analyticsRouter from './routes/analyticsDashboard.js'; 
