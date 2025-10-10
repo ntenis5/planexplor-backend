@@ -1,4 +1,4 @@
-// src/app.ts (VERSIONI PËRFUNDIMTAR DHE I STABILIZUAR TS)
+// src/app.ts (VERSIONI I RREGULLUAR PËR CORS)
 
 import express from 'express';
 import cors from 'cors'; 
@@ -21,33 +21,38 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// --- KONFIGURIMI I QËNDRUESHËM I CORS ---
-
-const FRONTEND_URL = process.env.FRONTEND_URL;
-
-// Krijon listën e plotë të origjinave të lejuara (LIVE URL + Localhost)
-// Dhe i thotë Typescript-it se kjo është një array stringjesh (as string[])
+// --- KONFIGURIMI I RI I CORS ---
 const allowedOrigins = [
-  FRONTEND_URL,
+  'https://planexplor-frontend.vercel.app', // ✅ DOMAIN-I I VERCEL
+  'https://placexplor-backend-production.up.railway.app', // ✅ DOMAIN-I I BACKEND
   'http://localhost:5173', 
-  'http://localhost:3000' 
-].filter((url): url is string => !!url) as string[]; // Filitron 'undefined' dhe forcon tipin
-
-// Nëse asnjë URL e Front-end-it nuk është vendosur (vetëm lokal), lejojmë të gjitha origjinat.
-const corsOrigin = allowedOrigins.length > 0 ? allowedOrigins : '*';
+  'http://localhost:3000',
+  process.env.FRONTEND_URL // ✅ NËSE E KONFIGURON NË RAILWAY
+].filter((url): url is string => !!url) as string[];
 
 const corsOptions = {
-  // Përdorim listën e pastër të stringjeve ose '*'
-  origin: corsOrigin, 
+  origin: function (origin, callback) {
+    // ✅ LEJO REQUEST-ET PA ORIGIN (POSTMAN, ETC)
+    if (!origin) return callback(null, true);
+    
+    // ✅ LEJO DOMAIN-ET NË LISTË
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      return callback(null, true);
+    } else {
+      console.log('CORS Blocked for origin:', origin);
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   optionsSuccessStatus: 200
 };
 
 // --- Middleware për Sigurinë dhe Performancën ---
 app.use(helmet());
 app.use(compression());
-app.use(cors(corsOptions)); // ✅ PËRDORIM KONFIGURIMIN E RI TË CORS
+app.use(cors(corsOptions)); // ✅ PËRDOR CORS ME KONFIGURIMIN E RI
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -62,14 +67,11 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // --- Routes ---
-
 app.use('/api/geolocation', geolocationRoutes); 
 app.use('/api/auth', authRoutes);
 app.use('/api/ads', adsRoutes);
 app.use('/api/payments', paymentsRoutes);
 app.use('/api/affiliate', affiliateRoutes);
-
-// Lidh rrugët e Feed-it, p.sh., /api/feed-posts
 app.use('/api', feedRoutes); 
 
 // Health check
@@ -77,7 +79,11 @@ app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV 
+    environment: process.env.NODE_ENV,
+    cors: {
+      allowedOrigins: allowedOrigins,
+      frontendUrl: process.env.FRONTEND_URL
+    }
   });
 });
 
@@ -87,5 +93,5 @@ initializeCache();
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV}`);
+  console.log(`🌐 CORS Allowed Origins:`, allowedOrigins);
 });
-  
