@@ -1,17 +1,4 @@
-// src/middleware/advancedAnalyticsMiddleware.ts
-import { analyticsService } from '../services/analyticsService.js';
-import { Request, Response, NextFunction } from 'express';
-
-// Extended Request interface për session dhe user
-interface AuthenticatedRequest extends Request {
-  session?: {
-    id?: string;
-  };
-  user?: {
-    id?: string;
-  };
-}
-
+// src/middleware/advancedAnalyticsMiddleware.ts - Korrigjo rreshtin 39
 export function advancedAnalyticsMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   const startTime = Date.now();
   const originalSend = res.send;
@@ -20,7 +7,12 @@ export function advancedAnalyticsMiddleware(req: AuthenticatedRequest, res: Resp
   res.send = function(body: any) {
     const responseTime = Date.now() - startTime;
 
-    // Përgatit të dhënat për analitikë
+    // Përgatit të dhënat për analitikë - KORRIGJO CACHE STATUS
+    const cacheHeader = res.getHeader('x-cache-status') as string;
+    const cacheStatus: 'hit' | 'miss' | 'skip' = 
+      cacheHeader === 'hit' ? 'hit' :
+      cacheHeader === 'miss' ? 'miss' : 'skip';
+
     const analyticsData = {
       sessionId: req.session?.id,
       userId: req.user?.id,
@@ -28,7 +20,7 @@ export function advancedAnalyticsMiddleware(req: AuthenticatedRequest, res: Resp
       method: req.method,
       status: res.statusCode,
       responseTime: responseTime,
-      cacheStatus: res.getHeader('x-cache-status') as string || 'skip',
+      cacheStatus: cacheStatus, // ✅ TASHMË E TIPIZUAR SIÇ DUHET
       cacheStrategy: res.getHeader('x-cache-strategy') as string,
       userAgent: req.get('user-agent'),
       userIp: req.ip,
@@ -42,4 +34,4 @@ export function advancedAnalyticsMiddleware(req: AuthenticatedRequest, res: Resp
   };
 
   next();
-      }
+}
