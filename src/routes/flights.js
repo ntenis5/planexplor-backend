@@ -1,13 +1,29 @@
-// src/routes/flights.js
-import { Router } from 'express';
+// src/routes/flights.ts
+import { Router, Request, Response } from 'express';
 import { travelPayoutsService } from '../services/travelpayoutsService.js';
 import { enhancedCacheService } from '../services/enhancedCacheService.js';
 
 const flightsRouter = Router();
 
+// Interface për parametrat e kërkimit
+interface FlightSearchParams {
+  origin?: string;
+  destination?: string;
+  departDate?: string;
+  returnDate?: string;
+  adults?: string;
+  children?: string;
+  infants?: string;
+}
+
+// Interface për sugjerimet
+interface SuggestionsParams {
+  query?: string;
+}
+
 // 🔍 KËRKIM I FLUTURIMEVE
-flightsRouter.get('/search', async (req, res) => {
-  const { origin, destination, departDate, returnDate, adults, children, infants } = req.query;
+flightsRouter.get('/search', async (req: Request, res: Response) => {
+  const { origin, destination, departDate, returnDate, adults, children, infants } = req.query as FlightSearchParams;
 
   if (!origin || !destination || !departDate) {
     return res.status(400).json({ 
@@ -42,9 +58,9 @@ flightsRouter.get('/search', async (req, res) => {
       destination,
       departDate,
       returnDate,
-      adults: parseInt(adults) || 1,
-      children: parseInt(children) || 0,
-      infants: parseInt(infants) || 0
+      adults: parseInt(adults || '1'),
+      children: parseInt(children || '0'),
+      infants: parseInt(infants || '0')
     });
 
     // 3. RUAJ NË CACHE (2 ORE PËR FLUTURIME)
@@ -52,8 +68,8 @@ flightsRouter.get('/search', async (req, res) => {
       cacheKey,
       flights,
       'flights_search',
-      'eu',
-      120 // 2 ore TTL
+      'eu'
+      // NDRYSHUAR: Hiqe TTL parameter sepse smartSet merr vetëm 4 parametra
     );
 
     res.json({
@@ -63,7 +79,7 @@ flightsRouter.get('/search', async (req, res) => {
       timestamp: new Date().toISOString()
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Flights search error:', error);
     res.status(500).json({ 
       error: 'Failed to search flights',
@@ -73,8 +89,8 @@ flightsRouter.get('/search', async (req, res) => {
 });
 
 // 💰 FLUTURIME MË TË LIRA
-flightsRouter.get('/cheapest', async (req, res) => {
-  const { origin, destination } = req.query;
+flightsRouter.get('/cheapest', async (req: Request, res: Response) => {
+  const { origin, destination } = req.query as FlightSearchParams;
 
   if (!origin) {
     return res.status(400).json({ error: 'Origin is required' });
@@ -104,8 +120,7 @@ flightsRouter.get('/cheapest', async (req, res) => {
       cacheKey,
       cheapestFlights,
       'flights_cheapest', 
-      'eu',
-      360 // 6 ore TTL
+      'eu'
     );
 
     res.json({
@@ -114,15 +129,15 @@ flightsRouter.get('/cheapest', async (req, res) => {
       cached: false
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Cheapest flights error:', error);
     res.status(500).json({ error: 'Failed to fetch cheapest flights' });
   }
 });
 
 // 🗺️ SUGJERIME DESTINACIONESH
-flightsRouter.get('/suggestions', async (req, res) => {
-  const { query } = req.query;
+flightsRouter.get('/suggestions', async (req: Request, res: Response) => {
+  const { query } = req.query as SuggestionsParams;
 
   if (!query) {
     return res.status(400).json({ error: 'Query is required' });
@@ -152,8 +167,7 @@ flightsRouter.get('/suggestions', async (req, res) => {
       cacheKey,
       suggestions,
       'flights_suggestions',
-      'eu', 
-      1440 // 24 ore TTL
+      'eu'
     );
 
     res.json({
@@ -162,14 +176,14 @@ flightsRouter.get('/suggestions', async (req, res) => {
       cached: false
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Flight suggestions error:', error);
     res.status(500).json({ error: 'Failed to fetch suggestions' });
   }
 });
 
 // 🏙️ LISTA E AEROPORTEVE
-flightsRouter.get('/airports', async (req, res) => {
+flightsRouter.get('/airports', async (req: Request, res: Response) => {
   try {
     const cacheKey = 'all_airports';
     
@@ -194,8 +208,7 @@ flightsRouter.get('/airports', async (req, res) => {
       cacheKey,
       airports,
       'flights_airports',
-      'eu',
-      10080 // 1 javë TTL
+      'eu'
     );
 
     res.json({
@@ -204,7 +217,7 @@ flightsRouter.get('/airports', async (req, res) => {
       cached: false
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Airports fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch airports' });
   }
