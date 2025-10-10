@@ -1,8 +1,6 @@
-// src/services/affiliateService.ts (VERSIONI FINAL)
-
+// src/services/affiliateService.ts (VERSIONI I KORRIGJUAR)
 import axios from 'axios';
-// ✅ Importet me .js janë korrekte
-import { CacheService } from './cacheService.js';
+import { cacheService } from './cacheService.js';
 import { supabase } from './supabaseClient.js'; 
 
 interface SearchParams {
@@ -44,17 +42,17 @@ interface SearchResult {
 const SEARCH_CACHE_TTL_SECONDS = 3600; 
 
 export class AffiliateService {
-  private cacheService: CacheService;
+  private cacheService = cacheService;
 
   constructor() {
-    this.cacheService = CacheService.getInstance();
+    // Përdor instancën ekzistuese nga cacheService
   }
 
   async search(params: SearchParams): Promise<SearchResult[]> {
     const cacheKey = this.generateCacheKey(params);
     
     // Try to get from cache first
-    const cachedResults = await this.cacheService.getFromCache(cacheKey);
+    const cachedResults = await this.cacheService.manageCache('get', cacheKey);
     if (cachedResults) {
       return this.filterResults(cachedResults, params);
     }
@@ -63,8 +61,10 @@ export class AffiliateService {
     const allResults = await this.fetchFromAllPartners(params);
     
     // Cache the results
-    // ✅ THIRRJA E CACHE-IT ME TTL FUNKSIONALE
-    await this.cacheService.setToCache(cacheKey, allResults, SEARCH_CACHE_TTL_SECONDS);
+    await this.cacheService.manageCache('set', cacheKey, allResults, {
+      ttl: SEARCH_CACHE_TTL_SECONDS / 60, // Konverto në minuta
+      cacheType: 'affiliate'
+    });
     
     return this.filterResults(allResults, params);
   }
@@ -72,7 +72,7 @@ export class AffiliateService {
   // --- Funksionet private ---
 
   private generateCacheKey(params: SearchParams): string {
-    return `search_${JSON.stringify(params)}`;
+    return `affiliate_search_${params.category}_${params.destination}_${params.budget}`;
   }
 
   private async fetchFromAllPartners(params: SearchParams): Promise<SearchResult[]> {
@@ -164,7 +164,7 @@ export class AffiliateService {
     return score;
   }
 
-  // Mock API implementations - mbeten të pandryshuara
+  // Mock API implementations
   private async mockBookingAPI(params: SearchParams): Promise<SearchResult[]> {
     return [
       {
@@ -175,7 +175,11 @@ export class AffiliateService {
         price: 120,
         original_price: 150,
         image_url: 'https://picsum.photos/400/300?random=1',
-        location: { lat: params.user_location.lat + 0.01, lng: params.user_location.lng + 0.01, address: 'City Center' },
+        location: { 
+          lat: params.user_location.lat + 0.01, 
+          lng: params.user_location.lng + 0.01, 
+          address: 'City Center' 
+        },
         distance: 5,
         rating: 4.5,
         affiliate_partner: 'Booking.com',
@@ -184,7 +188,7 @@ export class AffiliateService {
       }
     ];
   }
-  // ... (API-të e tjera Mock) ...
+
   private async mockAirbnbAPI(params: SearchParams): Promise<SearchResult[]> {
     return [
       {
@@ -194,7 +198,11 @@ export class AffiliateService {
         description: 'Modern apartment with great view',
         price: 80,
         image_url: 'https://picsum.photos/400/300?random=2',
-        location: { lat: params.user_location.lat + 0.02, lng: params.user_location.lng + 0.02, address: 'Residential Area' },
+        location: { 
+          lat: params.user_location.lat + 0.02, 
+          lng: params.user_location.lng + 0.02, 
+          address: 'Residential Area' 
+        },
         distance: 8,
         rating: 4.2,
         affiliate_partner: 'Airbnb',
@@ -213,7 +221,11 @@ export class AffiliateService {
         description: 'Economy class round trip',
         price: 200,
         image_url: 'https://picsum.photos/400/300?random=3',
-        location: { lat: params.user_location.lat, lng: params.user_location.lng, address: 'Local Airport' },
+        location: { 
+          lat: params.user_location.lat, 
+          lng: params.user_location.lng, 
+          address: 'Local Airport' 
+        },
         distance: 15,
         rating: 4.0,
         affiliate_partner: 'Expedia',
@@ -233,7 +245,11 @@ export class AffiliateService {
         price: 450,
         original_price: 550,
         image_url: 'https://picsum.photos/400/300?random=4',
-        location: { lat: params.user_location.lat + 0.05, lng: params.user_location.lng + 0.05, address: 'Beach Resort' },
+        location: { 
+          lat: params.user_location.lat + 0.05, 
+          lng: params.user_location.lng + 0.05, 
+          address: 'Beach Resort' 
+        },
         distance: 25,
         rating: 4.7,
         affiliate_partner: 'Tripadvisor',
@@ -248,9 +264,9 @@ export async function updateAffiliateData(): Promise<void> {
   const affiliateService = new AffiliateService();
   
   // Update cache for popular search combinations
-  const popularSearches = [
+  const popularSearches: SearchParams[] = [
     {
-      category: 'all' as const,
+      category: 'all',
       destination: 'Tirana',
       distance: 50,
       budget: 1000,
@@ -262,7 +278,10 @@ export async function updateAffiliateData(): Promise<void> {
   ];
 
   for (const search of popularSearches) {
-    // Kërkesa e Cache-it pa TTL sepse kryhet nga një cron-job
-    await affiliateService.search(search); 
+    try {
+      await affiliateService.search(search);
+    } catch (error) {
+      console.error('Error updating affiliate data:', error);
+    }
   }
   }
