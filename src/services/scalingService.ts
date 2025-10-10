@@ -1,7 +1,7 @@
 // src/services/scalingService.ts
-import { supabase } from './supabaseClient.js';
+import { supabase } from './supabaseClient.js'; 
 
-// Interface për strategjinë e cache
+// Interface for the cache strategy
 export interface CacheStrategy {
   ttl_minutes: number;
   priority: number;
@@ -18,26 +18,36 @@ export class ScalingService {
           endpoint_path: endpoint,
           user_region: userRegion,
           request_time: new Date().toISOString()
-        });
+        })
+        .returns<CacheStrategy[]>(); // Define return type as an array
 
-      return error ? this.getDefaultStrategy() : data;
+      // Supabase RPC returns 'data' as an array; get the first element
+      if (error || !data || data.length === 0) {
+        if (error) console.error("Supabase RPC Error:", error);
+        return this.getDefaultStrategy();
+      }
+      
+      // Returns the strategy object, which is the first element of the array
+      return data[0]; 
+
     } catch (error) {
       console.error('Error in getAdaptiveCacheStrategy:', error);
       return this.getDefaultStrategy();
     }
   }
 
-  // Metodë e re për enhancedCacheService - zëvendëson getCacheStrategy
+  // New method for enhancedCacheService - replaces getCacheStrategy
   async getCacheStrategy(endpoint: string, userRegion: string = 'eu'): Promise<CacheStrategy> {
     return this.getAdaptiveCacheStrategy(endpoint, userRegion);
   }
 
-  // Metodë e re për enhancedCacheService - zëvendëson validateCacheAccess
+  // New method for enhancedCacheService - replaces validateCacheAccess
   async validateCacheAccess(cacheKey: string, permissions: string[]): Promise<boolean> {
     try {
-      // Implementimi i thjeshtë - mund të kompleksohet sipas nevojës
+      // Simple implementation - can be made more complex as needed
       const hasValidPermission = permissions.includes('authenticated');
-      return hasValidPermission && cacheKey.length > 0;
+      // Check that cacheKey is a non-empty string.
+      return hasValidPermission && typeof cacheKey === 'string' && cacheKey.length > 0;
     } catch (error) {
       console.error('Error in validateCacheAccess:', error);
       return false;
@@ -48,7 +58,7 @@ export class ScalingService {
     try {
       const { data, error } = await supabase
         .rpc('check_scaling_needs');
-
+      // Simple check, assuming it returns { scaling_actions: [] } or similar object
       return error ? { scaling_actions: [] } : data;
     } catch (error) {
       console.error('Error in checkScalingNeeds:', error);
