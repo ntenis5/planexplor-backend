@@ -85,17 +85,8 @@ export class TravelPayoutsService {
     this.currency = process.env.TRAVELPAYOUTS_CURRENCY || 'eur';
   }
 
-  // 🔍 KËRKIM I FLUTURIMEVE
   async searchFlights(params: FlightSearchParams): Promise<FlightResult[]> {
-    const {
-      origin,
-      destination,
-      departDate,
-      returnDate,
-      adults = 1,
-      children = 0,
-      infants = 0
-    } = params;
+    const { origin, destination, departDate, returnDate, adults = 1, children = 0, infants = 0 } = params;
 
     try {
       const response = await axios.get(`${this.baseUrl}/v2/prices/latest`, {
@@ -120,7 +111,6 @@ export class TravelPayoutsService {
     }
   }
 
-  // 📊 FLUTURIME MË TË LIRA
   async getCheapestFlights(origin: string, destination?: string): Promise<CheapFlight[]> {
     try {
       const response = await axios.get(`${this.baseUrl}/v1/prices/cheap`, {
@@ -139,7 +129,6 @@ export class TravelPayoutsService {
     }
   }
 
-  // 🗺️ SUGJERIME PËR DESTINACIONE
   async getDestinationSuggestions(query: string): Promise<Suggestion[]> {
     try {
       const response = await axios.get(`${this.baseUrl}/v2/city-directions`, {
@@ -157,7 +146,6 @@ export class TravelPayoutsService {
     }
   }
 
-  // 🏙️ LISTA E AEROPORTEVE
   async getAirports(): Promise<any[]> {
     try {
       const response = await axios.get(`${this.baseUrl}/data/en/airports.json`, {
@@ -173,7 +161,6 @@ export class TravelPayoutsService {
     }
   }
 
-  // 🔄 FORMATIMI I REZULTATEVE
   private formatFlightResults(data: ApiResponse): FlightResult[] {
     if (!data.data) return [];
 
@@ -230,7 +217,6 @@ export class TravelPayoutsService {
     return suggestions.sort((a, b) => a.price - b.price).slice(0, 10);
   }
 
-  // 🔗 GENERO DEEP LINK PËR REZERVIM
   private generateDeepLink(flight: FlightData): string {
     const baseUrl = 'https://aviasales.tp.st';
     const params = new URLSearchParams({
