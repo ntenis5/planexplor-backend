@@ -1,8 +1,8 @@
 // src/routes/systemAdmin.ts
 import { Router, Request, Response } from 'express';
 import { enhancedCacheService } from '../services/enhancedCacheService.js';
-import { scalingService } from '../services/scalingService.js'; // NDRYSHUAR: path i saktë
-import { supabase } from '../services/supabaseClient.js'; // SHTUAR: importi i supabase
+import { scalingService } from '../services/scalingService.js'; // ✅ Path i saktë
+import { supabase } from '../services/supabaseClient.js'; // ✅ Importi i saktë i supabase
 
 const systemAdminRouter = Router();
 
@@ -11,7 +11,7 @@ systemAdminRouter.get('/health', async (req: Request, res: Response) => {
   try {
     const health = await enhancedCacheService.getSystemHealth();
     res.json({ success: true, health });
-  } catch (error: any) { // NDRYSHUAR: shtova type any për error
+  } catch (error: any) {
     res.status(500).json({ success: false, error: 'Health check failed' });
   }
 });
@@ -21,7 +21,7 @@ systemAdminRouter.get('/scaling-status', async (req: Request, res: Response) => 
   try {
     const status = await scalingService.checkScalingNeeds();
     res.json({ success: true, status });
-  } catch (error: any) { // NDRYSHUAR: shtova type any për error
+  } catch (error: any) {
     res.status(500).json({ success: false, error: 'Scaling status failed' });
   }
 });
@@ -34,7 +34,7 @@ systemAdminRouter.post('/maintain-indexes', async (req: Request, res: Response) 
     
     if (error) throw error;
     res.json({ success: true, data });
-  } catch (error: any) { // NDRYSHUAR: shtova type any për error
+  } catch (error: any) {
     res.status(500).json({ success: false, error: 'Maintenance failed' });
   }
 });
@@ -42,10 +42,10 @@ systemAdminRouter.post('/maintain-indexes', async (req: Request, res: Response) 
 // 🚨 EMERGENCY RECOVERY
 systemAdminRouter.post('/emergency-recovery', async (req: Request, res: Response) => {
   try {
-    // NDRYSHUAR: Shtova metodën emergencyRecovery në scalingService ose përdor ekzistuese
-    const result = await scalingService.runCacheMaintenance(); // Përdor metodën ekzistuese
+    // ✅ Përdor metodën ekzistuese runCacheMaintenance
+    const result = await scalingService.runCacheMaintenance();
     res.json({ success: true, result });
-  } catch (error: any) { // NDRYSHUAR: shtova type any për error
+  } catch (error: any) {
     res.status(500).json({ success: false, error: 'Recovery failed' });
   }
 });
