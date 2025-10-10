@@ -2,7 +2,16 @@
 import { supabase } from './supabaseClient.js';
 import { v4 as uuidv4 } from 'uuid';
 import geoip from 'geoip-lite';
-import { UserAgent } from 'user-agents';
+
+// Interface për kostot e API
+interface ApiCost {
+  cost: number;
+  savings: number;
+}
+
+interface CostMap {
+  [key: string]: ApiCost;
+}
 
 export class AnalyticsService {
   
@@ -18,31 +27,35 @@ export class AnalyticsService {
     userAgent?: string;
     userIp?: string;
   }): Promise<void> {
-    const countryCode = metric.userIp ? this.getCountryFromIP(metric.userIp) : null;
-    const deviceType = metric.userAgent ? this.getDeviceType(metric.userAgent) : null;
-    const costEstimate = this.calculateApiCost(metric.endpoint, metric.cacheStatus);
-    
-    const { error } = await supabase
-      .from('detailed_analytics')
-      .insert({
-        session_id: metric.sessionId || uuidv4(),
-        user_id: metric.userId,
-        endpoint_path: metric.endpoint,
-        http_method: metric.method,
-        response_status: metric.status,
-        response_time_ms: metric.responseTime,
-        cache_status: metric.cacheStatus,
-        cache_strategy: metric.cacheStrategy,
-        user_agent: metric.userAgent?.substring(0, 500),
-        user_ip: metric.userIp,
-        country_code: countryCode,
-        device_type: deviceType,
-        api_cost: costEstimate.totalCost,
-        cache_savings: costEstimate.savings
-      });
+    try {
+      const countryCode = metric.userIp ? this.getCountryFromIP(metric.userIp) : null;
+      const deviceType = metric.userAgent ? this.getDeviceType(metric.userAgent) : null;
+      const costEstimate = this.calculateApiCost(metric.endpoint, metric.cacheStatus);
+      
+      const { error } = await supabase
+        .from('detailed_analytics')
+        .insert({
+          session_id: metric.sessionId || uuidv4(),
+          user_id: metric.userId,
+          endpoint_path: metric.endpoint,
+          http_method: metric.method,
+          response_status: metric.status,
+          response_time_ms: metric.responseTime,
+          cache_status: metric.cacheStatus,
+          cache_strategy: metric.cacheStrategy,
+          user_agent: metric.userAgent?.substring(0, 500),
+          user_ip: metric.userIp,
+          country_code: countryCode,
+          device_type: deviceType,
+          api_cost: costEstimate.totalCost,
+          cache_savings: costEstimate.savings
+        });
 
-    if (error) {
-      console.error('Analytics logging error:', error);
+      if (error) {
+        console.error('Analytics logging error:', error);
+      }
+    } catch (error) {
+      console.error('Error in logDetailedRequest:', error);
     }
   }
 
@@ -56,14 +69,18 @@ export class AnalyticsService {
   }
 
   private getDeviceType(userAgent: string): string {
-    const agent = new UserAgent(userAgent);
-    if (agent.data.deviceCategory === 'mobile') return 'mobile';
-    if (agent.data.deviceCategory === 'tablet') return 'tablet';
-    return 'desktop';
+    try {
+      // Zëvendësoi UserAgent me logjikë më të thjeshtë
+      if (/mobile/i.test(userAgent)) return 'mobile';
+      if (/tablet/i.test(userAgent)) return 'tablet';
+      return 'desktop';
+    } catch {
+      return 'desktop';
+    }
   }
 
   private calculateApiCost(endpoint: string, cacheStatus: string) {
-    const costMap = {
+    const costMap: CostMap = {
       'geolocation_search': { cost: 0.0001, savings: 0.00008 },
       'reverse_geocode': { cost: 0.0002, savings: 0.00016 },
       'affiliate_feed': { cost: 0.001, savings: 0.0008 },
@@ -71,7 +88,8 @@ export class AnalyticsService {
       'media_optimization': { cost: 0.0003, savings: 0.00025 }
     };
 
-    const endpointCost = costMap[endpoint] || { cost: 0.0001, savings: 0.00008 };
+    // Përdor type assertion për të shmangur gabimin TypeScript
+    const endpointCost = (costMap as any)[endpoint] || { cost: 0.0001, savings: 0.00008 };
     
     return {
       totalCost: cacheStatus === 'miss' ? endpointCost.cost : 0,
@@ -79,11 +97,39 @@ export class AnalyticsService {
     };
   }
 
-  async generateDailyReport(): Promise<any> {
-    const { data, error } = await supabase
-      .rpc('generate_daily_performance_report');
+  // Metodë e re për analyticsDashboard - zëvendëson checkAnomalies
+  async checkAnomalies(data: any): Promise<any> {
+    try {
+      // Implementimi bazë për kontrollin e anomalive
+      const anomalies = {
+        hasAnomalies: false,
+        details: [] as string[],
+        timestamp: new Date().toISOString()
+      };
 
-    return error ? null : data;
+      // Shtoni logjikën tuaj të anomalive këtu
+      if (data?.response_time_ms > 5000) {
+        anomalies.hasAnomalies = true;
+        anomalies.details.push('High response time detected');
+      }
+
+      return anomalies;
+    } catch (error) {
+      console.error('Error in checkAnomalies:', error);
+      return { hasAnomalies: false, details: [], timestamp: new Date().toISOString() };
+    }
+  }
+
+  async generateDailyReport(): Promise<any> {
+    try {
+      const { data, error } = await supabase
+        .rpc('generate_daily_performance_report');
+
+      return error ? null : data;
+    } catch (error) {
+      console.error('Error in generateDailyReport:', error);
+      return null;
+    }
   }
 }
 
