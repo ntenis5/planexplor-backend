@@ -93,15 +93,3 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV}`);
 });
-```
-eof
-
----
-
-## 🏁 Detyra e Deploy-it
-
-1.  **Back-end (Railway):** Zëvendësoni **`src/app.ts`** me kodin e mësipërm.
-2.  **Variablat e Mjedisit (Railway):** Konfirmoni që keni vendosur **`FRONTEND_URL`** (njëjës) me domenin e deploy-uar të Vercel-it:
-    ```
-    FRONTEND_URL=https://planexplor-frontend.vercel.app
-
