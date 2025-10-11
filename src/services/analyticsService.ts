@@ -59,6 +59,34 @@ export class AnalyticsService {
     }
   }
 
+  // Metodë e re për advancedAnalyticsMiddleware - zëvendëson captureRequest
+  async captureRequest(metric: {
+    endpoint: string;
+    method: string;
+    status_code: number;
+    latency_ms: number;
+    user_id: any;
+    user_region: string | string[];
+  }): Promise<void> {
+    try {
+      // Konverto në formatin e logDetailedRequest
+      await this.logDetailedRequest({
+        sessionId: undefined,
+        userId: metric.user_id,
+        endpoint: metric.endpoint,
+        method: metric.method,
+        status: metric.status_code,
+        responseTime: metric.latency_ms,
+        cacheStatus: 'skip',
+        cacheStrategy: 'default',
+        userAgent: undefined,
+        userIp: undefined
+      });
+    } catch (error) {
+      console.error('Error in captureRequest:', error);
+    }
+  }
+
   private getCountryFromIP(ip: string): string | null {
     try {
       const geo = geoip.lookup(ip);
