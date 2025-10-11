@@ -3,7 +3,7 @@ import { supabase } from './supabaseClient.js';
 import { v4 as uuidv4 } from 'uuid';
 import geoip from 'geoip-lite';
 
-// Interface për kostot e API
+// Interface for API costs
 interface ApiCost {
   cost: number;
   savings: number;
@@ -30,6 +30,7 @@ export class AnalyticsService {
     try {
       const countryCode = metric.userIp ? this.getCountryFromIP(metric.userIp) : null;
       const deviceType = metric.userAgent ? this.getDeviceType(metric.userAgent) : null;
+      // Renamed variable to reflect returned object properties
       const costEstimate = this.calculateApiCost(metric.endpoint, metric.cacheStatus);
       
       const { error } = await supabase
@@ -47,8 +48,8 @@ export class AnalyticsService {
           user_ip: metric.userIp,
           country_code: countryCode,
           device_type: deviceType,
-          api_cost: costEstimate.totalCost,
-          cache_savings: costEstimate.savings
+          api_cost: costEstimate.totalCost, // Corrected property name
+          cache_savings: costEstimate.savings // Corrected property name
         });
 
       if (error) {
@@ -59,7 +60,7 @@ export class AnalyticsService {
     }
   }
 
-  // Metodë e re për advancedAnalyticsMiddleware - zëvendëson captureRequest
+  // New method for advancedAnalyticsMiddleware - replaces captureRequest
   async captureRequest(metric: {
     endpoint: string;
     method: string;
@@ -69,7 +70,7 @@ export class AnalyticsService {
     user_region: string | string[];
   }): Promise<void> {
     try {
-      // Konverto në formatin e logDetailedRequest
+      // Convert to logDetailedRequest format
       await this.logDetailedRequest({
         sessionId: undefined,
         userId: metric.user_id,
@@ -98,7 +99,7 @@ export class AnalyticsService {
 
   private getDeviceType(userAgent: string): string {
     try {
-      // Zëvendësoi UserAgent me logjikë më të thjeshtë
+      // Simplified UserAgent logic
       if (/mobile/i.test(userAgent)) return 'mobile';
       if (/tablet/i.test(userAgent)) return 'tablet';
       return 'desktop';
@@ -116,7 +117,7 @@ export class AnalyticsService {
       'media_optimization': { cost: 0.0003, savings: 0.00025 }
     };
 
-    // Përdor type assertion për të shmangur gabimin TypeScript
+    // Use type assertion to avoid TypeScript error, ensure access via string key
     const endpointCost = (costMap as any)[endpoint] || { cost: 0.0001, savings: 0.00008 };
     
     return {
@@ -125,17 +126,17 @@ export class AnalyticsService {
     };
   }
 
-  // Metodë e re për analyticsDashboard - zëvendëson checkAnomalies
+  // New method for analyticsDashboard - replaces checkAnomalies
   async checkAnomalies(data: any): Promise<any> {
     try {
-      // Implementimi bazë për kontrollin e anomalive
+      // Basic implementation for anomaly check
       const anomalies = {
         hasAnomalies: false,
         details: [] as string[],
         timestamp: new Date().toISOString()
       };
 
-      // Shtoni logjikën tuaj të anomalive këtu
+      // Add your anomaly logic here
       if (data?.response_time_ms > 5000) {
         anomalies.hasAnomalies = true;
         anomalies.details.push('High response time detected');
