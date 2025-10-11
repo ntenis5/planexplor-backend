@@ -5,7 +5,7 @@ import { enhancedCacheService } from '../services/enhancedCacheService.js';
 
 const flightsRouter = Router();
 
-// Interface për parametrat e kërkimit
+// Interface for flight search parameters
 interface FlightSearchParams {
   origin?: string;
   destination?: string;
@@ -16,32 +16,33 @@ interface FlightSearchParams {
   infants?: string;
 }
 
-// Interface për sugjerimet
+// Interface for suggestion parameters
 interface SuggestionsParams {
   query?: string;
 }
 
-// 🔍 KËRKIM I FLUTURIMEVE
+// 🔍 FLIGHT SEARCH
 flightsRouter.get('/search', async (req: Request, res: Response) => {
   const { origin, destination, departDate, returnDate, adults, children, infants } = req.query as FlightSearchParams;
 
   if (!origin || !destination || !departDate) {
     return res.status(400).json({ 
-      error: 'Origin, destination and depart date are required' 
+      error: 'Origin, destination, and depart date are required' 
     });
   }
 
   try {
-    const cacheKey = `flights_${origin}_${destination}_${departDate}_${returnDate}_${adults}_${children}_${infants}`;
+    // Generate a robust cache key
+    const cacheKey = `flights_${origin}_${destination}_${departDate}_${returnDate || ''}_${adults || '1'}_${children || '0'}_${infants || '0'}`;
     
-    // 1. PROVO CACHE
+    // 1. ATTEMPT CACHE HIT (smartGet uses adaptive strategy)
     const cachedResults = await enhancedCacheService.smartGet(
       cacheKey, 
       'flights_search', 
       'eu'
     );
 
-    if (cachedResults.status === 'hit') {
+    if (cachedResults.status === 'hit' && cachedResults.data) {
       return res.json({ 
         flights: cachedResults.data,
         source: 'cache',
@@ -50,7 +51,7 @@ flightsRouter.get('/search', async (req: Request, res: Response) => {
       });
     }
 
-    // 2. KËRKO FLUTURIME TË REJA
+    // 2. FETCH NEW FLIGHTS (Cache Miss)
     console.log('🔄 Fetching fresh flights data from TravelPayouts...');
     
     const flights = await travelPayoutsService.searchFlights({
@@ -63,13 +64,12 @@ flightsRouter.get('/search', async (req: Request, res: Response) => {
       infants: parseInt(infants || '0')
     });
 
-    // 3. RUAJ NË CACHE (2 ORE PËR FLUTURIME)
+    // 3. STORE IN CACHE (smartSet uses the adaptive TTL from scalingService)
     await enhancedCacheService.smartSet(
       cacheKey,
       flights,
       'flights_search',
       'eu'
-      // NDRYSHUAR: Hiqe TTL parameter sepse smartSet merr vetëm 4 parametra
     );
 
     res.json({
@@ -88,7 +88,7 @@ flightsRouter.get('/search', async (req: Request, res: Response) => {
   }
 });
 
-// 💰 FLUTURIME MË TË LIRA
+// 💰 CHEAPEST FLIGHTS
 flightsRouter.get('/cheapest', async (req: Request, res: Response) => {
   const { origin, destination } = req.query as FlightSearchParams;
 
@@ -99,13 +99,14 @@ flightsRouter.get('/cheapest', async (req: Request, res: Response) => {
   try {
     const cacheKey = `cheapest_flights_${origin}_${destination || 'any'}`;
     
+    // ATTEMPT CACHE HIT
     const cachedResults = await enhancedCacheService.smartGet(
       cacheKey, 
       'flights_cheapest', 
       'eu'
     );
 
-    if (cachedResults.status === 'hit') {
+    if (cachedResults.status === 'hit' && cachedResults.data) {
       return res.json({ 
         cheapestFlights: cachedResults.data,
         source: 'cache',
@@ -115,7 +116,7 @@ flightsRouter.get('/cheapest', async (req: Request, res: Response) => {
 
     const cheapestFlights = await travelPayoutsService.getCheapestFlights(origin, destination);
 
-    // RUAJ NË CACHE (6 ORE PËR FLUTURIME TË LIRA)
+    // STORE IN CACHE
     await enhancedCacheService.smartSet(
       cacheKey,
       cheapestFlights,
@@ -135,7 +136,7 @@ flightsRouter.get('/cheapest', async (req: Request, res: Response) => {
   }
 });
 
-// 🗺️ SUGJERIME DESTINACIONESH
+// 🗺️ DESTINATION SUGGESTIONS
 flightsRouter.get('/suggestions', async (req: Request, res: Response) => {
   const { query } = req.query as SuggestionsParams;
 
@@ -146,13 +147,14 @@ flightsRouter.get('/suggestions', async (req: Request, res: Response) => {
   try {
     const cacheKey = `flight_suggestions_${query}`;
     
+    // ATTEMPT CACHE HIT
     const cachedResults = await enhancedCacheService.smartGet(
       cacheKey, 
       'flights_suggestions', 
       'eu'
     );
 
-    if (cachedResults.status === 'hit') {
+    if (cachedResults.status === 'hit' && cachedResults.data) {
       return res.json({ 
         suggestions: cachedResults.data,
         source: 'cache',
@@ -162,7 +164,7 @@ flightsRouter.get('/suggestions', async (req: Request, res: Response) => {
 
     const suggestions = await travelPayoutsService.getDestinationSuggestions(query);
 
-    // RUAJ NË CACHE (24 ORE PËR SUGJERIME)
+    // STORE IN CACHE
     await enhancedCacheService.smartSet(
       cacheKey,
       suggestions,
@@ -182,18 +184,19 @@ flightsRouter.get('/suggestions', async (req: Request, res: Response) => {
   }
 });
 
-// 🏙️ LISTA E AEROPORTEVE
+// 🏙️ AIRPORT LIST
 flightsRouter.get('/airports', async (req: Request, res: Response) => {
   try {
     const cacheKey = 'all_airports';
     
+    // ATTEMPT CACHE HIT
     const cachedResults = await enhancedCacheService.smartGet(
       cacheKey, 
       'flights_airports', 
       'eu'
     );
 
-    if (cachedResults.status === 'hit') {
+    if (cachedResults.status === 'hit' && cachedResults.data) {
       return res.json({ 
         airports: cachedResults.data,
         source: 'cache',
@@ -203,7 +206,7 @@ flightsRouter.get('/airports', async (req: Request, res: Response) => {
 
     const airports = await travelPayoutsService.getAirports();
 
-    // RUAJ NË CACHE (1 JAVË PËR AEROPORTE)
+    // STORE IN CACHE
     await enhancedCacheService.smartSet(
       cacheKey,
       airports,
