@@ -12,7 +12,7 @@ export class BookingService {
       const response = await axios.get(`${this.config.baseUrl}${this.config.endpoints.hotels}`, {
         params: {
           ...params,
-          api_key: this.config.apiKey // ✅ API key merret nga environment
+          api_key: this.config.apiKey // API key is fetched from the environment
         },
         timeout: 10000
       });
@@ -25,7 +25,7 @@ export class BookingService {
   }
 
   async getHotelAvailability(hotelId, checkIn, checkOut) {
-    // Implementimi i ngjashëm
+    // Similar implementation
   }
 }
 
