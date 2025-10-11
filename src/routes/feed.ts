@@ -93,7 +93,8 @@ feedRouter.get('/feed-posts', async (req: Request, res: Response) => {
             'global'
         );
         
-        console.log(`💾 Feed saved to Cache. Strategy: ${setResponse.strategy.strategy}, TTL: ${setResponse.strategy.ttl_minutes} mins.`);
+        // ✅ KORRIGJIM: Shto kontroll për null/undefined
+        console.log(`💾 Feed saved to Cache. Strategy: ${setResponse.strategy?.strategy || 'default'}, TTL: ${setResponse.strategy?.ttl_minutes || CACHE_TTL_MINUTES} mins.`);
         
         // 4. Return the result
         return res.json(feedPosts.slice(0, limit));
