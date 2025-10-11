@@ -6,11 +6,11 @@ import { enhancedCacheService } from '../services/enhancedCacheService.js';
 const cacheAdminRouter = Router();
 
 /**
- * GET /stats - Retrieves detailed statistics about the caching system.
+ * GET /stats - Retrieves detailed statistics and health check of the caching system.
  */
 cacheAdminRouter.get('/stats', async (req: Request, res: Response) => {
   try {
-    // Assuming enhancedCacheService has a method to get system health/stats
+    // enhancedCacheService.getSystemHealth() returns scaling and performance stats
     const stats = await enhancedCacheService.getSystemHealth(); 
     res.json({ success: true, stats });
   } catch (error: any) {
@@ -24,10 +24,12 @@ cacheAdminRouter.get('/stats', async (req: Request, res: Response) => {
  */
 cacheAdminRouter.post('/cleanup', async (req: Request, res: Response) => {
   try {
-    // ✅ KORRIGJIM: Përdor metodën ekzistuese runCacheMaintenance nga scalingService
-    // ose shtoje në enhancedCacheService nëse do
-    const scalingService = await import('../services/scalingService.js');
-    const result = await scalingService.scalingService.runCacheMaintenance();
+    // FIX: Import the required service for cleanup. Since the cleanup logic is usually
+    // handled by cacheMaintenance or cacheService, and the original code referenced 
+    // scalingService.runCacheMaintenance, we will import and use cacheService's cleanup method 
+    // which is the common underlying function.
+    const { cacheService } = await import('../services/cacheService.js');
+    const result = await cacheService.cleanupCache();
     
     res.json({ success: true, result });
   } catch (error: any) {
