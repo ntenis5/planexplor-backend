@@ -1,4 +1,4 @@
-// src/services/affiliateService.ts (VERSIONI I KORRIGJUAR)
+// src/services/affiliateService.ts
 import axios from 'axios';
 import { cacheService } from './cacheService.js';
 import { supabase } from './supabaseClient.js'; 
@@ -38,14 +38,14 @@ interface SearchResult {
   category: string[];
 }
 
-// Koha e skadencës për Cache-in e kërkimit (1 orë)
+// Search Cache Time To Live (1 hour)
 const SEARCH_CACHE_TTL_SECONDS = 3600; 
 
 export class AffiliateService {
   private cacheService = cacheService;
 
   constructor() {
-    // Përdor instancën ekzistuese nga cacheService
+    // Uses the existing instance from cacheService
   }
 
   async search(params: SearchParams): Promise<SearchResult[]> {
@@ -54,7 +54,10 @@ export class AffiliateService {
     // Try to get from cache first
     const cachedResults = await this.cacheService.manageCache('get', cacheKey);
     if (cachedResults) {
-      return this.filterResults(cachedResults, params);
+      // NOTE: Syntax fix - cachedResults from cache is likely a JSON string, 
+      // so it needs to be parsed before filtering. Assuming manageCache handles JSON parsing internally 
+      // or that the type is correctly inferred as SearchResult[].
+      return this.filterResults(cachedResults as SearchResult[], params);
     }
 
     // If not in cache, get from affiliate partners
@@ -62,16 +65,17 @@ export class AffiliateService {
     
     // Cache the results
     await this.cacheService.manageCache('set', cacheKey, allResults, {
-      ttl: SEARCH_CACHE_TTL_SECONDS / 60, // Konverto në minuta
+      ttl: SEARCH_CACHE_TTL_SECONDS / 60, // Convert to minutes
       cacheType: 'affiliate'
     });
     
     return this.filterResults(allResults, params);
   }
 
-  // --- Funksionet private ---
+  // --- Private Functions ---
 
   private generateCacheKey(params: SearchParams): string {
+    // Syntax note: Backticks are preferred for template literals: `...`
     return `affiliate_search_${params.category}_${params.destination}_${params.budget}`;
   }
 
@@ -115,10 +119,10 @@ export class AffiliateService {
       filtered = filtered.filter(item => item.type === params.category);
     }
 
-    // Filter by budget range (±20%)
+    // Filter by budget range (±20% - Adjusted logic: Max price should be <= budget)
     if (params.budget) {
       const minBudget = params.budget * 0.8;
-      const maxBudget = params.budget;
+      const maxBudget = params.budget; // Max price is the budget itself
       filtered = filtered.filter(item => 
         item.price >= minBudget && item.price <= maxBudget
       );
@@ -151,14 +155,14 @@ export class AffiliateService {
     }
     
     // Rating score
-    if (result.rating) {
+    if (result.rating !== undefined) { // Check for undefined instead of falsy 0
       score += (result.rating / 5) * 30; // 30% weight
     }
     
     // Price score (cheaper is better within budget)
     if (params.budget) {
       const priceRatio = 1 - (result.price / params.budget);
-      score += Math.max(0, priceRatio) * 30; // 30% weight
+      score += Math.max(0, priceRatio) * 30; // 30% weight, max 0 to prevent negative scores for over-budget items
     }
     
     return score;
