@@ -11,7 +11,9 @@
     "cache:stats": "node --loader ts-node/esm src/scripts/checkCacheStats.ts",
     "cache:cleanup": "node --loader ts-node/esm src/scripts/runCacheCleanup.ts",
     "analytics:report": "node --loader ts-node/esm src/scripts/generateAnalyticsReport.ts",
-    "deploy:full": "npm run build && npm run migrate && npm run cache:setup"
+    "deploy:full": "npm run build && npm run migrate && npm run cache:setup",
+    "railway:build": "npm install && npm run build",
+    "railway:start": "node dist/app.js"
   },
   "dependencies": {
     "express": "^4.18.2",
