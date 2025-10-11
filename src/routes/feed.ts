@@ -1,11 +1,12 @@
 // src/routes/feed.ts
 import { Router, Request, Response } from 'express';
 import { supabase } from '../services/supabaseClient.js'; 
-import { cacheService } from '../services/cacheService.js'; 
+// Using enhancedCacheService for consistency with the rest of the project
+import { enhancedCacheService } from '../services/enhancedCacheService.js'; 
 
 const feedRouter = Router();
 
-// Interface për AdCampaign
+// Interface for AdCampaign data structure from Supabase
 interface AdCampaign {
   id: string;
   user_id: string;
@@ -17,6 +18,7 @@ interface AdCampaign {
   status: string;
 }
 
+// Interface for the simplified post data sent to the client
 interface FeedPost {
   id: string;
   title: string;
@@ -24,28 +26,35 @@ interface FeedPost {
   imageUrl: string;
 }
 
-// Krijon një çelës të qëndrueshëm cache-i
+// Creates a persistent cache key
 const FEED_CACHE_KEY = 'global_active_feed';
-// Koha e vlefshmërisë së cache-it (5 minuta)
+// Cache Time-To-Live (TTL) in minutes
 const CACHE_TTL_MINUTES = 5; 
 
 // ----------------------------------------------------------------------------------
 // ENDPOINT: GET /api/feed-posts?limit=X
-// Ky merr postimet (reklamat aktive) nga Supabase.
+// Fetches active posts (ads) from Supabase, utilizing an adaptive cache strategy.
 // ----------------------------------------------------------------------------------
 feedRouter.get('/feed-posts', async (req: Request, res: Response) => {
     const limit = parseInt(req.query.limit as string) || 20;
     
     try {
-        // 1. Kontrollon Cache-in
-        const cachedData = await cacheService.getFromCache(FEED_CACHE_KEY); 
-        if (cachedData) {
-            console.log('✅ Feed u shërbye nga Cache.');
-            const posts = cachedData as FeedPost[];
+        // Use the smartGet service that respects the adaptive cache strategy
+        const cacheResult = await enhancedCacheService.smartGet(
+            FEED_CACHE_KEY, 
+            'feed_posts_global', // Endpoint identifier for adaptive strategy
+            'global' 
+        );
+
+        // 1. Check Cache
+        if (cacheResult.status === 'hit' && cacheResult.data) {
+            console.log('✅ Feed served from Cache.');
+            const posts = cacheResult.data as FeedPost[];
+            // Only return the requested limit from the cached array
             return res.json(posts.slice(0, limit));
         }
 
-        // 2. Merr Reklamat nga Supabase
+        // 2. Fetch Active Campaigns from Supabase (Cache Miss)
         const { data: campaigns, error } = await supabase
             .from('ad_campaigns')
             .select(`
@@ -59,16 +68,16 @@ feedRouter.get('/feed-posts', async (req: Request, res: Response) => {
                 status 
             `)
             .eq('status', 'active') 
-            .gt('views_purchased', 'views_delivered') 
+            .gt('views_purchased', 'views_delivered') // Ensure views are available
             .order('id', { ascending: true }) 
-            .limit(200); 
+            .limit(200); // Limit the raw fetch to prevent huge payloads
 
         if (error) {
-            console.error('Gabim në marrjen e fushatave:', error);
-            return res.status(500).json({ error: 'Dështim në bazën e të dhënave.' });
+            console.error('Error fetching campaigns:', error);
+            return res.status(500).json({ error: 'Database fetch failed.' });
         }
-
-        // Përgatit të dhënat e thjeshtëzuara për Frontend-in
+        
+        // Prepare simplified data for the Frontend
         const feedPosts: FeedPost[] = campaigns.map((campaign: AdCampaign) => ({
             id: campaign.id,
             title: campaign.title,
@@ -76,15 +85,21 @@ feedRouter.get('/feed-posts', async (req: Request, res: Response) => {
             imageUrl: campaign.image_url,
         }));
 
-        // 3. Ruaj në Cache
-        await cacheService.setToCache(FEED_CACHE_KEY, feedPosts, CACHE_TTL_MINUTES * 60); 
-        console.log(`💾 Feed i ruajtur në Cache për ${CACHE_TTL_MINUTES} minuta.`);
+        // 3. Save to Cache using smartSet (which applies the optimal TTL/strategy)
+        const setResponse = await enhancedCacheService.smartSet(
+            FEED_CACHE_KEY, 
+            feedPosts, 
+            'feed_posts_global',
+            'global'
+        );
         
-        // 4. Kthe rezultatin
+        console.log(`💾 Feed saved to Cache. Strategy: ${setResponse.strategy.strategy}, TTL: ${setResponse.strategy.ttl_minutes} mins.`);
+        
+        // 4. Return the result
         return res.json(feedPosts.slice(0, limit));
 
     } catch (error) {
-        console.error('Gabim në /api/feed-posts:', error);
+        console.error('Error in /api/feed-posts:', error);
         return res.status(500).json({ error: 'Internal Server Error' });
     }
 });
