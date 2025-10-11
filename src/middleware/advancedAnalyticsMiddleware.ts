@@ -1,51 +1,70 @@
 // src/middleware/advancedAnalyticsMiddleware.ts
+import { analyticsService } from '../services/analyticsService.js';
 import { Request, Response, NextFunction } from 'express';
-import { analyticsService } from '../services/analyticsService.js'; // Assuming .js extension for module loading
 
-/**
- * Middleware to capture and process advanced request analytics.
- * This includes endpoint, latency, and user information for adaptive scaling.
- */
-export const advancedAnalyticsMiddleware = async (
-  req: Request, 
-  res: Response, 
-  next: NextFunction
-) => {
-  const start = process.hrtime.bigint();
+// Extended Request interface për session dhe user
+interface AuthenticatedRequest extends Request {
+  session?: {
+    id?: string;
+  };
+  user?: {
+    id?: string;
+  };
+}
 
-  // Attach an event listener to capture response completion
-  res.on('finish', async () => {
-    try {
-      const end = process.hrtime.bigint();
-      const latency_ms = Number(end - start) / 1000000; // Convert nanoseconds to milliseconds
+export function advancedAnalyticsMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  const startTime = Date.now();
 
-      const analyticsData = {
-        endpoint: req.originalUrl,
-        method: req.method,
-        status_code: res.statusCode,
-        latency_ms: latency_ms,
-        // Assuming user data is attached by a previous middleware (e.g., Auth Middleware)
-        user_id: (req as any).user?.id || null, 
-        user_region: req.headers['x-user-region'] || 'unknown',
-      };
+  // Mbivendos res.json për të kapur response time
+  const originalJson = res.json;
+  
+  (res as any).json = function(body: any) {
+    // ✅ TË GJITHA VARIABLAT:
+    const responseTime = Date.now() - startTime;
+    const cacheHeader = (res as any).getHeader ? (res as any).getHeader('x-cache-status') as string : undefined;
+    const cacheStatus: 'hit' | 'miss' | 'skip' = 
+      cacheHeader === 'hit' ? 'hit' :
+      cacheHeader === 'miss' ? 'miss' : 'skip';
+    const cacheStrategy = (res as any).getHeader ? (res as any).getHeader('x-cache-strategy') as string : 'default';
+    const userAgent = req.get('user-agent');
+    const userIp = req.ip;
+    const countryCode = req.get('cf-ipcountry') || req.get('x-country-code') || 'eu';
+    const userId = req.user?.id;
+    const sessionId = req.session?.id;
+    const endpoint = req.path;
+    const method = req.method;
+    const statusCode = (res as any).statusCode || 200;
 
-      // Call the service asynchronously without blocking the response
-     
- analyticsService.captureRequest({
-  endpoint: req.path,
-  method: req.method,
-  status_code: (res as any).statusCode,
-  latency_ms: responseTime,
-  user_id: req.user?.id,
-  user_region: req.get('cf-ipcountry') || 'eu'
-}).catch(console.error);
-      
-    } catch (error) {
-      console.error('Error during advanced analytics capture:', error);
-      // Do not re-throw the error, as it would interfere with the response flow
-    }
-  });
+    // ✅ TANI MUND TË PËRDORËSH captureRequest OSE logDetailedRequest:
+    
+    // Opsioni A: Përdor captureRequest (më i thjeshtë)
+    analyticsService.captureRequest({
+      endpoint: endpoint,
+      method: method,
+      status_code: statusCode,
+      latency_ms: responseTime,
+      user_id: userId,
+      user_region: countryCode
+    }).catch(console.error);
 
-  // Continue to the next middleware or route handler
+    // Opsioni B: Përdor logDetailedRequest (më i plotë)
+    /*
+    analyticsService.logDetailedRequest({
+      sessionId: sessionId,
+      userId: userId,
+      endpoint: endpoint,
+      method: method,
+      status: statusCode,
+      responseTime: responseTime,
+      cacheStatus: cacheStatus,
+      cacheStrategy: cacheStrategy,
+      userAgent: userAgent,
+      userIp: userIp
+    }).catch(console.error);
+    */
+
+    return originalJson.call(this, body);
+  };
+
   next();
-};
+}
