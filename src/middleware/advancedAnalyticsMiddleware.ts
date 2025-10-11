@@ -30,7 +30,15 @@ export const advancedAnalyticsMiddleware = async (
       };
 
       // Call the service asynchronously without blocking the response
-     analyticsService.logDetailedRequest(analyticsData).catch(console.error);
+     
+ analyticsService.captureRequest({
+  endpoint: req.path,
+  method: req.method,
+  status_code: (res as any).statusCode,
+  latency_ms: responseTime,
+  user_id: req.user?.id,
+  user_region: req.get('cf-ipcountry') || 'eu'
+}).catch(console.error);
       
     } catch (error) {
       console.error('Error during advanced analytics capture:', error);
