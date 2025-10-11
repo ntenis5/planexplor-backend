@@ -1,56 +1,52 @@
-// src/routes/geolocation.ts - VERSION I PËRDITËSUAR
+// src/routes/geolocation.ts
 import { Router, Request, Response } from 'express';
 import axios from 'axios';
 import { supabase } from '../services/supabaseClient.js'; 
+import { enhancedCacheService } from '../services/enhancedCacheService.js'; // Import the enhanced service
 
 const geolocationRouter = Router();
 
-// FUNKSIONI I RI PËR CACHE
-async function getCachedGeolocation(key: string) {
-  const { data, error } = await supabase
-    .rpc('get_geolocation_cache', { search_query: key });
-  
-  if (error || !data) return null;
-  return data;
-}
+// Define the unique endpoint identifier for adaptive caching logic
+const ENDPOINT_GEO_SEARCH = 'geolocation_search';
+const ENDPOINT_GEO_REVERSE = 'geolocation_reverse';
 
-async function setCachedGeolocation(key: string, data: any, ttl: number = 360) {
-  await supabase
-    .rpc('cache_geolocation', {
-      search_query: key,
-      result_data: data,
-      ttl_minutes: ttl
-    });
-}
-
-// 📍 SEARCH ENDPOINT ME CACHE
+// ----------------------------------------------------------------------------------
+// ENDPOINT: GET /search
+// Geocoding search with adaptive caching and performance logging.
+// ----------------------------------------------------------------------------------
 geolocationRouter.get('/search', async (req: Request, res: Response) => {
   const { query } = req.query;
 
   if (!query || typeof query !== 'string') {
-    return res.status(400).json({ error: 'Kërkohet parametri "query"' });
+    return res.status(400).json({ error: 'The "query" parameter is required' });
   }
 
-  const cacheKey = query.toLowerCase().trim();
+  const cacheKey = `geo_search:${query.toLowerCase().trim()}`;
   
   try {
-    // 1. PROVO CACHE-IN E PARË
-    const cachedData = await getCachedGeolocation(cacheKey);
+    const userRegion = req.headers['x-user-region'] as string || 'eu';
+
+    // 1. ATTEMPT SMART CACHE HIT
+    const cacheResult = await enhancedCacheService.smartGet(
+      cacheKey,
+      ENDPOINT_GEO_SEARCH,
+      userRegion
+    );
     
-    if (cachedData) {
+    if (cacheResult.status === 'hit' && cacheResult.data) {
       console.log('✅ Geolocation serviced from CACHE:', cacheKey);
       
-      // Log performance hit
+      // Log performance hit (using a fixed minimal time for cache access)
       await supabase.rpc('log_performance', {
-        endpoint_name: 'geolocation_search',
-        response_time: 5, // ~5ms për cache hit
+        endpoint_name: ENDPOINT_GEO_SEARCH,
+        response_time: 5, 
         cache_status: 'hit'
       });
       
-      return res.json(cachedData);
+      return res.json(cacheResult.data);
     }
 
-    // 2. NUK KA CACHE - BEJ API CALL
+    // 2. CACHE MISS - EXECUTE API CALL
     console.log('🔄 Fetching fresh geolocation data:', cacheKey);
     
     const startTime = Date.now();
@@ -78,12 +74,17 @@ geolocationRouter.get('/search', async (req: Request, res: Response) => {
         boundingbox: results[0].boundingbox
       };
       
-      // 3. VENDOS NË CACHE PËR PËRDORIM TË ARDHSHËM
-      await setCachedGeolocation(cacheKey, result, 360); // 6 ore
+      // 3. STORE IN CACHE using smartSet (TTL is managed by adaptive strategy)
+      await enhancedCacheService.smartSet(
+        cacheKey,
+        result,
+        ENDPOINT_GEO_SEARCH,
+        userRegion
+      ); 
       
       // Log performance miss
       await supabase.rpc('log_performance', {
-        endpoint_name: 'geolocation_search',
+        endpoint_name: ENDPOINT_GEO_SEARCH,
         response_time: responseTime,
         cache_status: 'miss'
       });
@@ -93,51 +94,60 @@ geolocationRouter.get('/search', async (req: Request, res: Response) => {
       return res.status(404).json({ 
         lat: null, 
         lng: null, 
-        address: 'Nuk u gjet asnjë lokacion' 
+        address: 'No location found' 
       });
     }
 
   } catch (error) {
-    console.error('Gabim në Geocoding Search:', error);
+    console.error('Error in Geocoding Search:', error);
     
     // Log error performance
     await supabase.rpc('log_performance', {
-      endpoint_name: 'geolocation_search',
+      endpoint_name: ENDPOINT_GEO_SEARCH,
       response_time: 0,
       cache_status: 'skip'
     });
     
-    return res.status(500).json({ error: 'Dështim në shërbimin e Geocoding' });
+    return res.status(500).json({ error: 'Geocoding service failed' });
   }
 });
 
-// 📍 REVERSE GEOCODE ME CACHE
+// ----------------------------------------------------------------------------------
+// ENDPOINT: GET /reverse-geocode
+// Reverse Geocoding with adaptive caching and performance logging.
+// ----------------------------------------------------------------------------------
 geolocationRouter.get('/reverse-geocode', async (req: Request, res: Response) => {
   const { lat, lng } = req.query;
 
   if (!lat || !lng || typeof lat !== 'string' || typeof lng !== 'string') {
-    return res.status(400).json({ error: 'Kërkohen parametrat "lat" dhe "lng"' });
+    return res.status(400).json({ error: 'The "lat" and "lng" parameters are required' });
   }
 
-  const cacheKey = `reverse_${lat}_${lng}`;
+  const cacheKey = `geo_reverse:${lat}_${lng}`;
   
   try {
-    // 1. PROVO CACHE-IN
-    const cachedData = await getCachedGeolocation(cacheKey);
+    const userRegion = req.headers['x-user-region'] as string || 'eu';
+
+    // 1. ATTEMPT SMART CACHE HIT
+    const cacheResult = await enhancedCacheService.smartGet(
+        cacheKey, 
+        ENDPOINT_GEO_REVERSE, 
+        userRegion
+    );
     
-    if (cachedData) {
+    if (cacheResult.status === 'hit' && cacheResult.data) {
       console.log('✅ Reverse Geocode serviced from CACHE:', cacheKey);
       
       await supabase.rpc('log_performance', {
-        endpoint_name: 'reverse_geocode',
+        endpoint_name: ENDPOINT_GEO_REVERSE,
         response_time: 5,
         cache_status: 'hit'
       });
       
-      return res.json(cachedData);
+      return res.json(cacheResult.data);
     }
 
-    // 2. API CALL
+    // 2. CACHE MISS - API CALL
     console.log('🔄 Fetching fresh reverse geocode:', cacheKey);
     const startTime = Date.now();
     
@@ -165,11 +175,16 @@ geolocationRouter.get('/reverse-geocode', async (req: Request, res: Response) =>
       details: data.address
     };
 
-    // 3. CACHE RESULT (24 ORE PËR REVERSE GEOCODE)
-    await setCachedGeolocation(cacheKey, result, 1440);
+    // 3. CACHE RESULT (TTL is managed by adaptive strategy)
+    await enhancedCacheService.smartSet(
+        cacheKey,
+        result,
+        ENDPOINT_GEO_REVERSE,
+        userRegion
+    );
     
     await supabase.rpc('log_performance', {
-      endpoint_name: 'reverse_geocode',
+      endpoint_name: ENDPOINT_GEO_REVERSE,
       response_time: responseTime,
       cache_status: 'miss'
     });
@@ -177,15 +192,15 @@ geolocationRouter.get('/reverse-geocode', async (req: Request, res: Response) =>
     return res.json(result);
 
   } catch (error) {
-    console.error('Gabim në Reverse Geocoding:', error);
+    console.error('Error in Reverse Geocoding:', error);
     
     await supabase.rpc('log_performance', {
-      endpoint_name: 'reverse_geocode',
+      endpoint_name: ENDPOINT_GEO_REVERSE,
       response_time: 0,
       cache_status: 'skip'
     });
     
-    return res.status(500).json({ error: 'Dështim në shërbimin e Reverse Geocoding' });
+    return res.status(500).json({ error: 'Reverse Geocoding service failed' });
   }
 });
 
