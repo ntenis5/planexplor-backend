@@ -24,8 +24,11 @@ cacheAdminRouter.get('/stats', async (req: Request, res: Response) => {
  */
 cacheAdminRouter.post('/cleanup', async (req: Request, res: Response) => {
   try {
-    // We use the scalingService's maintenance function for cleanup
-    const result = await enhancedCacheService.runCacheMaintenance();
+    // ✅ KORRIGJIM: Përdor metodën ekzistuese runCacheMaintenance nga scalingService
+    // ose shtoje në enhancedCacheService nëse do
+    const scalingService = await import('../services/scalingService.js');
+    const result = await scalingService.scalingService.runCacheMaintenance();
+    
     res.json({ success: true, result });
   } catch (error: any) {
     console.error('Cache cleanup error:', error);
