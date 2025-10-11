@@ -18,17 +18,29 @@ export class ScalingService {
           endpoint_path: endpoint,
           user_region: userRegion,
           request_time: new Date().toISOString()
-        })
-        .returns<CacheStrategy[]>(); // Define return type as an array
+        });
+        // ✅ HIQE: .returns<CacheStrategy[]>(); // Supabase nuk e mbështet këtë
 
+      // ✅ KORRIGJIM: Përdor 'as any' për të shmangur gabimet TypeScript
+      const strategyData = data as any;
+      
       // Supabase RPC returns 'data' as an array; get the first element
-      if (error || !data || data.length === 0) {
+      if (error || !strategyData) {
         if (error) console.error("Supabase RPC Error:", error);
         return this.getDefaultStrategy();
       }
       
-      // Returns the strategy object, which is the first element of the array
-      return data[0]; 
+      // Nëse është array, merr elementin e parë
+      if (Array.isArray(strategyData) && strategyData.length > 0) {
+        return strategyData[0] as CacheStrategy;
+      }
+      
+      // Nëse është object, përdor direkt
+      if (typeof strategyData === 'object' && strategyData !== null) {
+        return strategyData as CacheStrategy;
+      }
+      
+      return this.getDefaultStrategy();
 
     } catch (error) {
       console.error('Error in getAdaptiveCacheStrategy:', error);
