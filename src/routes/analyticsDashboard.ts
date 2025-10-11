@@ -7,7 +7,7 @@ const analyticsRouter = Router();
 // 📊 REALTIME DASHBOARD
 analyticsRouter.get('/realtime', async (req: Request, res: Response) => {
   try {
-    // Përdorim metodën ekzistuese derisa të shtojmë getRealtimeDashboard
+    // Using existing method until getRealtimeDashboard is implemented
     const data = await analyticsService.generateDailyReport();
     res.json({ success: true, data });
   } catch (error) {
@@ -19,8 +19,8 @@ analyticsRouter.get('/realtime', async (req: Request, res: Response) => {
 // 💰 COST ANALYSIS
 analyticsRouter.get('/cost-analysis', async (req: Request, res: Response) => {
   try {
-    // Përdorim funksion lokal derisa të implementohet në shërbim
-    const data = await getCostAnalysis();
+    // Using a local function until service implementation is ready
+    const data = await fetchCostAnalysisData(); // Renamed local function
     res.json({ success: true, data });
   } catch (error) {
     console.error('Cost analysis error:', error);
@@ -31,8 +31,8 @@ analyticsRouter.get('/cost-analysis', async (req: Request, res: Response) => {
 // 🌍 REGIONAL PERFORMANCE
 analyticsRouter.get('/regional', async (req: Request, res: Response) => {
   try {
-    // Përdorim funksion lokal derisa të implementohet në shërbim
-    const data = await getRegionalPerformance();
+    // Using a local function until service implementation is ready
+    const data = await fetchRegionalPerformanceData(); // Renamed local function
     res.json({ success: true, data });
   } catch (error) {
     console.error('Regional performance error:', error);
@@ -62,9 +62,9 @@ analyticsRouter.get('/anomalies', async (req: Request, res: Response) => {
   }
 });
 
-// Funksione ndihmëse - jo private por të thjeshta
-async function getCostAnalysis(): Promise<any> {
-  // Implementimi i thjeshtë - mund të kompleksohet
+// Helper functions for mock data
+async function fetchCostAnalysisData(): Promise<any> {
+  // Simple mock implementation - can be made more complex
   return {
     totalCost: 0,
     savings: 0,
@@ -76,8 +76,8 @@ async function getCostAnalysis(): Promise<any> {
   };
 }
 
-async function getRegionalPerformance(): Promise<any> {
-  // Implementimi i thjeshtë - mund të kompleksohet
+async function fetchRegionalPerformanceData(): Promise<any> {
+  // Simple mock implementation - can be made more complex
   return {
     regions: [
       { name: 'Europe', performance: 95 },
