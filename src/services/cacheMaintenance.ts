@@ -1,5 +1,5 @@
 // src/services/cacheMaintenance.ts
-import { logger } from '../utils/logger.js'; // ZGJIDHUR: Importon modulin e ri logger
+import { logger } from '../utils/logger.js'; // ZGJIDHUR: Importon logger-in e ri
 
 import { cacheService } from './cacheService.js';
 import * as os from 'os';
@@ -11,10 +11,9 @@ export class CacheMaintenance {
    * Starts a scheduled cache cleanup process.
    */
   startScheduledCleanup() {
-    // Clean up cache every 6 hours
     this.cleanupInterval = setInterval(async () => {
       try {
-        // Zëvendësuar console.log
+        // Zëvendësuar console.log me logger.info
         logger.info('🔄 Running scheduled cache cleanup...'); 
         const result = await cacheService.cleanupCache();
         // Zëvendësuar console.log
