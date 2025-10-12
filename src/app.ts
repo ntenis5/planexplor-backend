@@ -1,11 +1,11 @@
-import express, { Request, Response, NextFunction } from 'express'; 
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors'; 
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
-import pinoHttp from 'pino-http'; // Import i ri i rregulluar
+import pino from 'pino-http';
 import dotenv from 'dotenv';
-import 'express-async-errors'; 
+import 'express-async-errors'; // ✅ SHTUAR KËTU
 
 // Load env vars
 if (process.env.NODE_ENV !== 'production') {
@@ -13,11 +13,10 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // --- Route Imports ---
-// KUJDES: Sigurohuni që këto rrugë të mos kenë gabime sintaksore brenda tyre!
 import geolocationRoutes from './routes/geolocation.js'; 
 import authRoutes from './routes/auth.js';
 import adsRoutes from './routes/ads.js';
-import paymentsRoutes from './routes/payments.js'; // Kjo është rregulluar
+import paymentsRoutes from './routes/payments.js';
 import affiliateRoutes from './routes/affiliate.js';
 import feedRoutes from './routes/feed.js'; 
 import flightsRouter from './routes/flights.js'; 
@@ -35,15 +34,15 @@ const PORT = parseInt(process.env.PORT || '3000', 10);
 
 // --- Performance Optimizations ---
 
-// 1. Advanced Logging with Pino (RREGULLUAR PER TS2349)
-const loggerMiddleware = pinoHttp({
+// 1. Advanced Logging with Pino
+const logger = pino({
   level: process.env.LOG_LEVEL || 'info',
   transport: process.env.NODE_ENV === 'development' ? {
     target: 'pino-pretty',
     options: { colorize: true }
   } : undefined
 });
-app.use(loggerMiddleware); // Tani përdor loggerMiddleware
+app.use(logger);
 
 // 2. Advanced CORS Configuration
 const FRONTEND_URL = process.env.FRONTEND_URL;
@@ -102,11 +101,6 @@ app.use('/api/auth', createRateLimit(15 * 60 * 1000, 50, 'Too many authenticatio
 // 6. Custom Analytics Middleware
 app.use(analyticsMiddleware);
 
-// 7. Manual Async Error Handling (fallback)
-app.use((req: Request, res: Response, next: NextFunction) => {
-  Promise.resolve(next()).catch(next);
-});
-
 // --- Route Mounting ---
 const API_PREFIX = '/api/v1';
 
@@ -124,8 +118,8 @@ app.use(`${API_PREFIX}/analytics`, analyticsRouter);
 // --- Health Check Endpoints (Optimized) ---
 app.get('/', (req, res) => {
   res.json({ 
-    message: '🚀 Planexplor Backend API is running!', 
-    version: '1.0.1',
+    message: '🚀 Planexplor Backend API is running!',
+    version: '1.0.0',
     timestamp: Date.now(),
     environment: process.env.NODE_ENV,
     status: 'healthy'
@@ -189,7 +183,7 @@ app.use('*', (req: Request, res: Response) => {
 // --- Application Startup ---
 const startServer = async () => {
   try {
-    console.log('🚀 Starting Planexplor Backend...'); 
+    console.log('🚀 Starting Planexplor Backend...');
     console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`🔧 Node Version: ${process.version}`);
 
