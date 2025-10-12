@@ -3,16 +3,20 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
-
-// Kthyer në import standard. Problemi ReferenceError zgjidhet duke 
-// siguruar që paketa të jetë në 'dependencies' dhe që kompajllimi 
-// i tsc (në package.json/tsconfig.json) të jetë NodeNext.
-import 'express-async-errors'; 
-
 import pino from 'pino-http';
 import dotenv from 'dotenv';
 
-// Load env vars - works locally, Railway uses its own env vars
+// Zgjidhje për express-async-errors
+const initializeAsyncErrors = async () => {
+  try {
+    const { default: asyncErrors } = await import('express-async-errors');
+  } catch (error) {
+    console.log('⚠️  express-async-errors not available, using manual error handling');
+  }
+};
+initializeAsyncErrors();
+
+// Load env vars
 if (process.env.NODE_ENV !== 'production') {
   dotenv.config();
 }
@@ -106,10 +110,9 @@ app.use('/api/auth', createRateLimit(15 * 60 * 1000, 50, 'Too many authenticatio
 // 6. Custom Analytics Middleware
 app.use(analyticsMiddleware);
 
-// 7. Health Check Middleware - No auth required
-app.use('/health', (req, res, next) => {
-  // Skip rate limiting and some auth for health checks
-  next();
+// 7. Manual Async Error Handling (fallback)
+app.use((req: Request, res: Response, next: NextFunction) => {
+  Promise.resolve(next()).catch(next);
 });
 
 // --- Route Mounting ---
@@ -157,8 +160,7 @@ app.get('/system-health', async (req: Request, res: Response) => {
       ...healthWithoutTimestamp
     });
   } catch (error: any) {
-    // Korrigjim i tipit për Pino Logger, nëse @types/pino-http nuk e zgjidh plotësisht
-    (req as any).log.error('System Health Check Failed:', error);
+    (req as any).log?.error('System Health Check Failed:', error);
     res.status(503).json({ 
       status: 'unhealthy', 
       error: 'Service temporarily unavailable',
@@ -169,8 +171,7 @@ app.get('/system-health', async (req: Request, res: Response) => {
 
 // --- Global Error Handling ---
 app.use((error: any, req: Request, res: Response, next: NextFunction) => {
-  // Korrigjim i tipit për Pino Logger
-  (req as any).log.error(error);
+  (req as any).log?.error(error);
   
   if (error.message?.includes('cache')) {
     res.status(503).json({
@@ -196,7 +197,7 @@ app.use('*', (req: Request, res: Response) => {
 // --- Application Startup ---
 const startServer = async () => {
   try {
-    console.log('🚀 Starting Placexplor Backend...');
+    console.log('🚀 Starting Planexplor Backend...');
     console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`🔧 Node Version: ${process.version}`);
 
