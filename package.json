@@ -52,6 +52,7 @@
     "@types/pino-http": "*",
     "@types/helmet": "*",
     "@types/express-rate-limit": "*",
-    "@types/express-async-errors": "*"
+    "@types/express-async-errors": "*",
+    "@types/geoip-lite": "*"
   }
-}
+  }
