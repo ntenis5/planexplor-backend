@@ -46,13 +46,12 @@
     "@types/compression": "*",
     "@types/stripe": "*",
     "@types/uuid": "*",
-    "@types/geoip-lite": "*",
+    "@types/geoip-lite": "1.4.1",
     "@types/axios": "*",
     "@types/user-agents": "*",
     "@types/pino-http": "*",
     "@types/helmet": "*",
     "@types/express-rate-limit": "*",
-    "@types/express-async-errors": "*",
-    "@types/geoip-lite": "*"
+    "@types/express-async-errors": "*"
   }
-  }
+}
