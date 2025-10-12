@@ -3,9 +3,12 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
-// RREGULLIMI: Përdorim 'require()' për të zgjidhur gabimin ERR_MODULE_NOT_FOUND
-// Në ESM, kjo pako globale duhet të importohet kështu për stabilitet.
-require('express-async-errors'); 
+
+// Kthyer në import standard. Problemi ReferenceError zgjidhet duke 
+// siguruar që paketa të jetë në 'dependencies' dhe që kompajllimi 
+// i tsc (në package.json/tsconfig.json) të jetë NodeNext.
+import 'express-async-errors'; 
+
 import pino from 'pino-http';
 import dotenv from 'dotenv';
 
@@ -154,7 +157,7 @@ app.get('/system-health', async (req: Request, res: Response) => {
       ...healthWithoutTimestamp
     });
   } catch (error: any) {
-    // Gabimi i logut pino (nëse nuk e keni zgjidhur me @types)
+    // Korrigjim i tipit për Pino Logger, nëse @types/pino-http nuk e zgjidh plotësisht
     (req as any).log.error('System Health Check Failed:', error);
     res.status(503).json({ 
       status: 'unhealthy', 
@@ -166,7 +169,7 @@ app.get('/system-health', async (req: Request, res: Response) => {
 
 // --- Global Error Handling ---
 app.use((error: any, req: Request, res: Response, next: NextFunction) => {
-  // Gabimi i logut pino (nëse nuk e keni zgjidhur me @types)
+  // Korrigjim i tipit për Pino Logger
   (req as any).log.error(error);
   
   if (error.message?.includes('cache')) {
