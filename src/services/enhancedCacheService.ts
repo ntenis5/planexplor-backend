@@ -1,5 +1,5 @@
 // src/services/enhancedCacheService.ts
-import { logger } from '../utils/logger.js'; // FIKSUAR: Importimi i logger-it
+import { logger } from '../utils/logger.js'; // ZGJIDHUR: Importimi i logger-it
 
 import { supabase } from './supabaseClient.js';
 import { scalingService } from './scalingService.js';
