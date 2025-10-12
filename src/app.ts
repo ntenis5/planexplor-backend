@@ -35,25 +35,10 @@ const PORT = parseInt(process.env.PORT || '3000', 10);
 // --- Performance Optimizations ---
 
 // 1. Advanced Logging with Pino - FIXED ✅
-const loggerOptions = {
+const logger = pino({
   level: process.env.LOG_LEVEL || 'info'
-};
+});
 
-// Vetëm në development përdor pino-pretty
-if (process.env.NODE_ENV === 'development') {
-  try {
-    // Kontrollo nëse pino-pretty është i disponueshëm
-    const pinoPretty = await import('pino-pretty');
-    loggerOptions.transport = {
-      target: 'pino-pretty',
-      options: { colorize: true }
-    };
-  } catch (error) {
-    console.log('⚠️  pino-pretty not available, using default JSON logger');
-  }
-}
-
-const logger = pino(loggerOptions);
 app.use(logger);
 
 // 2. Advanced CORS Configuration
