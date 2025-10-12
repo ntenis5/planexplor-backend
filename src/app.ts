@@ -5,6 +5,7 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import pino from 'pino-http';
 import dotenv from 'dotenv';
+import 'express-async-errors';  // Në vend të require()
 
 // Zgjidhje për express-async-errors
 const initializeAsyncErrors = async () => {
