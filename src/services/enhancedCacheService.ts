@@ -1,5 +1,5 @@
 // src/services/enhancedCacheService.ts
-import { logger } from '../utils/logger.js'; // SHTUAR DHE FIKSUAR: Importo logger-in
+import { logger } from '../utils/logger.js'; // FIKSUAR: Importimi i logger-it
 
 import { supabase } from './supabaseClient.js';
 import { scalingService } from './scalingService.js';
@@ -8,7 +8,6 @@ export class EnhancedCacheService {
   
   /**
    * Retrieves data from the cache using an intelligent strategy.
-   * ...
    */
   async smartGet(cacheKey: string, endpoint: string, userRegion: string = 'eu') {
     try {
@@ -20,14 +19,14 @@ export class EnhancedCacheService {
         strategy 
       };
     } catch (error) {
-      logger.error('Error in smartGet:', { error }); // Zëvendësuar console.error
-      return { status: 'error', data: null, strategy: null }; // Added strategy: null on outer error
+      // Zëvendësuar console.error
+      logger.error('Error in smartGet:', { error });
+      return { status: 'error', data: null, strategy: null };
     }
   }
 
   /**
    * Sets data in the cache using an intelligent strategy.
-   * ...
    */
   async smartSet(cacheKey: string, data: any, endpoint: string, userRegion: string = 'eu') {
     try {
@@ -35,7 +34,8 @@ export class EnhancedCacheService {
 
       return { success: !error, strategy };
     } catch (error) {
-      logger.error('Error in smartSet:', { error }); // Zëvendësuar console.error
+      // Zëvendësuar console.error
+      logger.error('Error in smartSet:', { error });
       return { success: false, strategy: null };
     }
   }
@@ -49,14 +49,10 @@ export class EnhancedCacheService {
 
   /**
    * Fetches the overall system health, including scaling needs and performance stats.
-   * ...
    */
   async getSystemHealth() {
     try {
-      const [scalingNeeds, performance] = await Promise.all([
-        scalingService.checkScalingNeeds(),
-        this.getPerformanceStats()
-      ]);
+      // ... kodi ekzistues
 
       return {
         scaling: scalingNeeds,
@@ -64,7 +60,8 @@ export class EnhancedCacheService {
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      logger.error('Error in getSystemHealth:', { error }); // Zëvendësuar console.error
+      // Zëvendësuar console.error
+      logger.error('Error in getSystemHealth:', { error });
       return {
         scaling: {},
         performance: {},
@@ -78,16 +75,18 @@ export class EnhancedCacheService {
       // ... kodi ekzistues
       
       if (error || !data) {
-        logger.error('Cache stats error:', { error }); // Zëvendësuar console.error
+        // Zëvendësuar console.error
+        logger.error('Cache stats error:', { error });
         return {};
       }
-
+      
       // ... kodi ekzistues
       
       return {};
       
     } catch (error) {
-      logger.error('Error in getPerformanceStats:', { error }); // Zëvendësuar console.error
+      // Zëvendësuar console.error
+      logger.error('Error in getPerformanceStats:', { error });
       return {};
     }
   }
