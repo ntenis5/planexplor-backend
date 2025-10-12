@@ -10,8 +10,8 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "typeRoots": ["./node_modules/@types", "./@types"] // Shto ketu dosjen tuaj te re @types
+    "typeRoots": ["./node_modules/@types", "./@types"]
   },
-  "include": ["src/**/*", "@types/**/*"], // Sigurohuni qe te perfshije skedarin e ri .d.ts
+  "include": ["src/**/*", "@types/**/*"],
   "exclude": ["node_modules", "dist"]
 }
