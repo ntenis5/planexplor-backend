@@ -1,21 +1,11 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express, { Request, Response, NextFunction } from 'express'; // Korrigjuar: import express from 'express';
 import cors from 'cors'; 
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
-import pino from 'pino-http';
+import pino from 'pino-http'; // Korrigjuar: import pino from 'pino-http';
 import dotenv from 'dotenv';
-import 'express-async-errors';  // Në vend të require()
-
-// Zgjidhje për express-async-errors
-const initializeAsyncErrors = async () => {
-  try {
-    const { default: asyncErrors } = await import('express-async-errors');
-  } catch (error) {
-    console.log('⚠️  express-async-errors not available, using manual error handling');
-  }
-};
-initializeAsyncErrors();
+import 'express-async-errors'; // Ruajtur si import side-effect
 
 // Load env vars
 if (process.env.NODE_ENV !== 'production') {
@@ -133,7 +123,7 @@ app.use(`${API_PREFIX}/analytics`, analyticsRouter);
 // --- Health Check Endpoints (Optimized) ---
 app.get('/', (req, res) => {
   res.json({ 
-    message: '🚀 Planexplor Backend API is running!', // ✅ KORRIGJUAR
+    message: '🚀 Planexplor Backend API is running!', 
     version: '1.0.0',
     timestamp: Date.now(),
     environment: process.env.NODE_ENV,
@@ -198,7 +188,7 @@ app.use('*', (req: Request, res: Response) => {
 // --- Application Startup ---
 const startServer = async () => {
   try {
-    console.log('🚀 Starting Planexplor Backend...'); // ✅ KORRIGJUAR
+    console.log('🚀 Starting Planexplor Backend...'); 
     console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`🔧 Node Version: ${process.version}`);
 
