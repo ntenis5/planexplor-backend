@@ -11,24 +11,19 @@ export class EnhancedCacheService {
    */
   async smartGet(cacheKey: string, endpoint: string, userRegion: string = 'eu') {
     try {
-      // Fetch the optimal strategy
       const strategy = await scalingService.getCacheStrategy(endpoint, userRegion);
-      
-      // Validate access
       const isValid = await scalingService.validateCacheAccess(cacheKey, ['authenticated']);
       
       if (!isValid) {
         return { status: 'invalid_access', data: null };
       }
 
-      // Use the cache manager with the determined strategy
       const { data, error } = await supabase
         .rpc('cache_manager', {
           operation: 'get',
           key_text: cacheKey
         });
 
-      // Check for errors or a cache miss
       if (error || data?.status !== 'hit') {
         return { status: 'miss', data: null, strategy }; 
       }
@@ -52,7 +47,6 @@ export class EnhancedCacheService {
     try {
       const strategy = await scalingService.getCacheStrategy(endpoint, userRegion);
       
-      // The RPC expects ttl_minutes. Strategy is assumed to provide this.
       const { error } = await supabase
         .rpc('cache_manager', {
           operation: 'set',
@@ -105,7 +99,6 @@ export class EnhancedCacheService {
 
   private async getPerformanceStats() {
     try {
-      // Assuming 'get_cache_stats' returns a single object or an array of objects
       const { data, error } = await supabase.rpc('get_cache_stats');
       
       if (error || !data) {
@@ -116,12 +109,10 @@ export class EnhancedCacheService {
 
       const statsData = data as any;
       
-      // If an array is returned, use the first element (common for single-row reports from RPC)
       if (Array.isArray(statsData) && statsData.length > 0) {
         return statsData[0];
       }
       
-      // If a single object is returned, use it directly 
       if (typeof statsData === 'object' && statsData !== null) {
         return statsData;
       }
