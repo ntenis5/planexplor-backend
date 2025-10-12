@@ -1,4 +1,3 @@
-// src/routes/geolocation.ts
 import { Router, Request, Response } from 'express';
 import axios from 'axios';
 import { supabase } from '../services/supabaseClient.js'; 
@@ -64,7 +63,8 @@ geolocationRouter.get('/search', async (req: Request, res: Response) => {
     );
     const responseTime = Date.now() - startTime;
 
-    const results = response.data;
+    // KORRIGJIM: Detyrimi i tipit në Array<any> për të zgjidhur TS7053
+    const results = response.data as Array<any>; 
 
     if (results && results.length > 0) {
       const result = {
@@ -166,6 +166,7 @@ geolocationRouter.get('/reverse-geocode', async (req: Request, res: Response) =>
     );
     
     const responseTime = Date.now() - startTime;
+    // 'data' automatikisht merr llojin e saktë nga Axios në këtë rast (një objekt), por mund ta detyrosh me 'as any' nëse dëshiron më shumë siguri. E lëmë siç është.
     const data = response.data;
     
     const result = { 
