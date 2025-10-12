@@ -155,7 +155,7 @@ if (cacheMaintenance && cacheMaintenance.startScheduledCleanup) {
   console.log('ℹ️ Cache maintenance module not available or invalid.');
 }
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV}`);
   console.log(`🌐 CORS Allowed Origins: ${allowedOrigins.length > 0 ? allowedOrigins.join(', ') : 'ALL (*)'}`);
