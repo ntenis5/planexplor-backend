@@ -1,11 +1,11 @@
-import express, { Request, Response, NextFunction } from 'express'; // Korrigjuar: import express from 'express';
+import express, { Request, Response, NextFunction } from 'express'; 
 import cors from 'cors'; 
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
-import pino from 'pino-http'; // Korrigjuar: import pino from 'pino-http';
+import pinoHttp from 'pino-http'; // Import i ri i rregulluar
 import dotenv from 'dotenv';
-import 'express-async-errors'; // Ruajtur si import side-effect
+import 'express-async-errors'; 
 
 // Load env vars
 if (process.env.NODE_ENV !== 'production') {
@@ -13,10 +13,11 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // --- Route Imports ---
+// KUJDES: Sigurohuni që këto rrugë të mos kenë gabime sintaksore brenda tyre!
 import geolocationRoutes from './routes/geolocation.js'; 
 import authRoutes from './routes/auth.js';
 import adsRoutes from './routes/ads.js';
-import paymentsRoutes from './routes/payments.js';
+import paymentsRoutes from './routes/payments.js'; // Kjo është rregulluar
 import affiliateRoutes from './routes/affiliate.js';
 import feedRoutes from './routes/feed.js'; 
 import flightsRouter from './routes/flights.js'; 
@@ -34,15 +35,15 @@ const PORT = parseInt(process.env.PORT || '3000', 10);
 
 // --- Performance Optimizations ---
 
-// 1. Advanced Logging with Pino
-const logger = pino({
+// 1. Advanced Logging with Pino (RREGULLUAR PER TS2349)
+const loggerMiddleware = pinoHttp({
   level: process.env.LOG_LEVEL || 'info',
   transport: process.env.NODE_ENV === 'development' ? {
     target: 'pino-pretty',
     options: { colorize: true }
   } : undefined
 });
-app.use(logger);
+app.use(loggerMiddleware); // Tani përdor loggerMiddleware
 
 // 2. Advanced CORS Configuration
 const FRONTEND_URL = process.env.FRONTEND_URL;
@@ -124,7 +125,7 @@ app.use(`${API_PREFIX}/analytics`, analyticsRouter);
 app.get('/', (req, res) => {
   res.json({ 
     message: '🚀 Planexplor Backend API is running!', 
-    version: '1.0.0',
+    version: '1.0.1',
     timestamp: Date.now(),
     environment: process.env.NODE_ENV,
     status: 'healthy'
