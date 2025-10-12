@@ -1,4 +1,4 @@
-// src/routes/payments.ts (VERSIONI FINAL DHE I ZGJIDHUR PËR GABIMIN TS2322)
+// src/routes/payments.ts 
 
 import express, { Request, Response } from 'express'; 
 import Stripe from 'stripe';
@@ -12,7 +12,7 @@ interface CreateIntentBody {
 }
 
 const paymentsRouter = express.Router(); 
-// Gabimi TS2322 zgjidhet duke përdorur saktësisht këtë version:
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2023-08-16',
 });
