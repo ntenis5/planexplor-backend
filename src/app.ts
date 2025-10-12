@@ -18,15 +18,16 @@ import cacheAdminRouter from './routes/cacheAdmin.js';
 import analyticsRouter from './routes/analyticsDashboard.js'; 
 
 // --- Service and Middleware Imports ---
-// Using enhancedCacheService for all advanced cache logic
 import { enhancedCacheService } from './services/enhancedCacheService.js'; 
-import { cacheMaintenance } from './services/cacheMaintenance.js'; // For starting cleanup cron job
+import { cacheMaintenance } from './services/cacheMaintenance.js';
 import analyticsMiddleware from './middleware/analyticsMiddleware.js';
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+
+// ✅ ZGJIDHJA: Konverto PORT në number
+const PORT = parseInt(process.env.PORT || '3000', 10);
 
 // --- CORS Configuration ---
 const FRONTEND_URL = process.env.FRONTEND_URL;
@@ -36,7 +37,6 @@ const allowedOrigins = [
   'http://localhost:3000' 
 ].filter((url): url is string => !!url) as string[];
 
-// Fallback to '*' if no specific origins are configured (for initial deployment)
 const corsOrigin = allowedOrigins.length > 0 ? allowedOrigins : '*'; 
 
 const corsOptions = {
@@ -50,13 +50,13 @@ const corsOptions = {
 app.use(helmet());
 app.use(compression());
 app.use(cors(corsOptions)); 
-app.use(express.json({ limit: '10mb' })); // Increased limit for potential image/data uploads
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Global Rate Limiter
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   standardHeaders: true,
   legacyHeaders: false,
   message: 'Too many requests from this IP, please try again after 15 minutes.'
@@ -72,10 +72,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/ads', adsRoutes);
 app.use('/api/payments', paymentsRoutes);
 app.use('/api/affiliate', affiliateRoutes);
-app.use('/api', feedRoutes); // Accessible via /api/feed-posts
+app.use('/api', feedRoutes);
 app.use('/api/flights', flightsRouter);
-
-// Admin Routes (should be protected in production using middleware)
 app.use('/api/admin/system', systemAdminRouter);
 app.use('/api/admin/cache', cacheAdminRouter);
 app.use('/api/analytics', analyticsRouter);
@@ -99,12 +97,9 @@ app.get('/health', (req, res) => {
   });
 });
 
-// GET /system-health - Detailed system status check using Enhanced Cache Service
 app.get('/system-health', async (req: Request, res: Response) => {
   try {
     const health = await enhancedCacheService.getSystemHealth();
-    
-    // Deconstruct health object to avoid duplicate timestamp property
     const { timestamp, ...healthWithoutTimestamp } = health;
     
     res.json({ 
@@ -124,18 +119,15 @@ app.get('/system-health', async (req: Request, res: Response) => {
 });
 
 // --- Global Error Handling ---
-// This handles errors bubbled up from middleware or routes
 app.use((error: any, req: Request, res: Response, next: NextFunction) => {
-  // Check for specific cache system errors to provide a specific fallback response
   if (error.message && (error.message.includes('cache') || error.message.includes('CACHE'))) {
     console.error('Cache System Error Detected:', error.message);
-    res.status(503).json({ // 503 Service Unavailable is appropriate here
+    res.status(503).json({
       error: 'Cache system temporarily unavailable',
       detail: error.message,
       fallback_advice: 'The application might temporarily use direct database/API calls.'
     });
   } else {
-    // General Server Error
     console.error('General Server Error:', error);
     res.status(500).json({
       error: 'Internal Server Error',
@@ -147,7 +139,6 @@ app.use((error: any, req: Request, res: Response, next: NextFunction) => {
 // --- Application Startup ---
 console.log('✅ Initializing cache service...');
 
-// Start the scheduled maintenance job if the module is available
 if (cacheMaintenance && cacheMaintenance.startScheduledCleanup) {
   cacheMaintenance.startScheduledCleanup();
   console.log('🕒 Scheduled cache cleanup started.');
@@ -155,9 +146,9 @@ if (cacheMaintenance && cacheMaintenance.startScheduledCleanup) {
   console.log('ℹ️ Cache maintenance module not available or invalid.');
 }
 
+// ✅ TANI DO TE FUNKSIONOJE - PORT është number, jo string
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV}`);
   console.log(`🌐 CORS Allowed Origins: ${allowedOrigins.length > 0 ? allowedOrigins.join(', ') : 'ALL (*)'}`);
 });
-  
