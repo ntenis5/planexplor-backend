@@ -34,7 +34,7 @@ const PORT = parseInt(process.env.PORT || '3000', 10);
 
 // --- Performance Optimizations ---
 
-// 1. Advanced Logging with Pino - FIXED ✅
+// 1. Advanced Logging with Pino - SIMPLE & WORKING
 const logger = pino({
   level: process.env.LOG_LEVEL || 'info'
 });
