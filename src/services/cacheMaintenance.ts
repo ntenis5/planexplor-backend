@@ -1,8 +1,8 @@
 // src/services/cacheMaintenance.ts
-import { logger } from '../utils/logger.js'; // SHTUAR DHE FIKSUAR: Importo logger-in
+import { logger } from '../utils/logger.js'; // FIKSUAR: Importimi i logger-it
 
 import { cacheService } from './cacheService.js';
-import * as os from 'os'; // Added for Node.js typing consistency with global objects like NodeJS.Timeout
+import * as os from 'os'; // Përdorur për qëndrueshmëri
 
 export class CacheMaintenance {
   private cleanupInterval: NodeJS.Timeout | null = null;
@@ -11,14 +11,16 @@ export class CacheMaintenance {
    * Starts a scheduled cache cleanup process.
    */
   startScheduledCleanup() {
-    // Clean up cache every 6 hours
     this.cleanupInterval = setInterval(async () => {
       try {
-        logger.info('🔄 Running scheduled cache cleanup...'); // Zëvendësuar console.log
+        // Zëvendësuar console.log me logger.info
+        logger.info('🔄 Running scheduled cache cleanup...'); 
         const result = await cacheService.cleanupCache();
-        logger.info('✅ Cache cleanup completed:', { result }); // Zëvendësuar console.log
+        // Zëvendësuar console.log
+        logger.info('✅ Cache cleanup completed:', { result }); 
       } catch (error) {
-        logger.error('❌ Cache cleanup failed:', { error }); // Zëvendësuar console.error
+        // Zëvendësuar console.error
+        logger.error('❌ Cache cleanup failed:', { error }); 
       }
     }, 6 * 60 * 60 * 1000); // 6 hours
   }
@@ -30,7 +32,8 @@ export class CacheMaintenance {
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
       this.cleanupInterval = null;
-      logger.info('🛑 Scheduled cache cleanup stopped.'); // Zëvendësuar console.log
+      // Zëvendësuar console.log
+      logger.info('🛑 Scheduled cache cleanup stopped.');
     }
   }
 }
