@@ -11,8 +11,28 @@ export class EnhancedCacheService {
    */
   async smartGet(cacheKey: string, endpoint: string, userRegion: string = 'eu') {
     try {
-      // ... kodi ekzistues
+      // Fetch the optimal strategy
+      const strategy = await scalingService.getCacheStrategy(endpoint, userRegion);
       
+      // Validate access
+      const isValid = await scalingService.validateCacheAccess(cacheKey, ['authenticated']);
+      
+      if (!isValid) {
+        return { status: 'invalid_access', data: null };
+      }
+
+      // Use the cache manager with the determined strategy
+      const { data, error } = await supabase
+        .rpc('cache_manager', {
+          operation: 'get',
+          key_text: cacheKey
+        });
+
+      // Check for errors or a cache miss
+      if (error || data?.status !== 'hit') {
+        return { status: 'miss', data: null, strategy }; 
+      }
+
       return { 
         status: 'hit', 
         data: data.data,
@@ -30,7 +50,17 @@ export class EnhancedCacheService {
    */
   async smartSet(cacheKey: string, data: any, endpoint: string, userRegion: string = 'eu') {
     try {
-      // ... kodi ekzistues
+      const strategy = await scalingService.getCacheStrategy(endpoint, userRegion);
+      
+      // The RPC expects ttl_minutes. Strategy is assumed to provide this.
+      const { error } = await supabase
+        .rpc('cache_manager', {
+          operation: 'set',
+          key_text: cacheKey,
+          data_json: data,
+          cache_type: this.getCacheType(endpoint),
+          ttl_minutes: strategy.ttl_minutes 
+        });
 
       return { success: !error, strategy };
     } catch (error) {
@@ -52,7 +82,10 @@ export class EnhancedCacheService {
    */
   async getSystemHealth() {
     try {
-      // ... kodi ekzistues
+      const [scalingNeeds, performance] = await Promise.all([
+        scalingService.checkScalingNeeds(),
+        this.getPerformanceStats()
+      ]);
 
       return {
         scaling: scalingNeeds,
@@ -72,15 +105,26 @@ export class EnhancedCacheService {
 
   private async getPerformanceStats() {
     try {
-      // ... kodi ekzistues
+      // Assuming 'get_cache_stats' returns a single object or an array of objects
+      const { data, error } = await supabase.rpc('get_cache_stats');
       
       if (error || !data) {
         // Zëvendësuar console.error
         logger.error('Cache stats error:', { error });
         return {};
       }
+
+      const statsData = data as any;
       
-      // ... kodi ekzistues
+      // If an array is returned, use the first element (common for single-row reports from RPC)
+      if (Array.isArray(statsData) && statsData.length > 0) {
+        return statsData[0];
+      }
+      
+      // If a single object is returned, use it directly 
+      if (typeof statsData === 'object' && statsData !== null) {
+        return statsData;
+      }
       
       return {};
       
