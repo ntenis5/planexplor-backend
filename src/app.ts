@@ -13,7 +13,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // --- Route Imports ---
-import geolocationRoutes from '../routes/geolocation.js'; 
+import geolocationRoutes from './routes/geolocation.js'; 
 import authRoutes from './routes/auth.js';
 import adsRoutes from './routes/ads.js';
 import paymentsRoutes from './routes/payments.js';
