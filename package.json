@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "nodemon src/app.ts",
+    "dev": "nodemon --loader ts-node/esm src/app.ts",
     "build": "tsc",
     "start": "node dist/app.js",
     "migrate": "npx supabase db push",
