@@ -132,7 +132,7 @@ app.use(`${API_PREFIX}/analytics`, analyticsRouter);
 // --- Health Check Endpoints (Optimized) ---
 app.get('/', (req, res) => {
   res.json({ 
-    message: '🚀 Planexplor Backend API is running!',
+    message: '🚀 Planexplor Backend API is running!', // ✅ KORRIGJUAR
     version: '1.0.0',
     timestamp: Date.now(),
     environment: process.env.NODE_ENV,
@@ -197,7 +197,7 @@ app.use('*', (req: Request, res: Response) => {
 // --- Application Startup ---
 const startServer = async () => {
   try {
-    console.log('🚀 Starting Planexplor Backend...');
+    console.log('🚀 Starting Planexplor Backend...'); // ✅ KORRIGJUAR
     console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`🔧 Node Version: ${process.version}`);
 
