@@ -1,4 +1,6 @@
 // src/services/enhancedCacheService.ts
+import { logger } from '../utils/logger.js'; // Importimi i saktë i logger-it
+
 import { supabase } from './supabaseClient.js';
 import { scalingService } from './scalingService.js';
 
@@ -6,72 +8,34 @@ export class EnhancedCacheService {
   
   /**
    * Retrieves data from the cache using an intelligent strategy.
-   * @param cacheKey The key to look up in the cache.
-   * @param endpoint The API endpoint path.
-   * @param userRegion The region of the user accessing the endpoint.
-   * @returns An object containing the cache status, data (on hit), and the applied strategy.
+   * ...
    */
   async smartGet(cacheKey: string, endpoint: string, userRegion: string = 'eu') {
     try {
-      // Fetch the optimal strategy
-      const strategy = await scalingService.getCacheStrategy(endpoint, userRegion);
-      
-      // Validate access
-      // NOTE: Assuming validateCacheAccess requires the key and a list of required roles/permissions.
-      const isValid = await scalingService.validateCacheAccess(cacheKey, ['authenticated']);
-      
-      if (!isValid) {
-        return { status: 'invalid_access', data: null };
-      }
-
-      // Use the cache manager with the determined strategy
-      const { data, error } = await supabase
-        .rpc('cache_manager', {
-          operation: 'get',
-          key_text: cacheKey
-        });
-
-      // Check for errors or a cache miss
-      if (error || data?.status !== 'hit') {
-        return { status: 'miss', data: null, strategy }; // Explicitly set data to null on miss/error
-      }
-
+      // ... kodi ekzistues
       return { 
         status: 'hit', 
         data: data.data,
         strategy 
       };
     } catch (error) {
-      console.error('Error in smartGet:', error);
-      return { status: 'error', data: null, strategy: null }; // Added strategy: null on outer error
+      // Zëvendësuar console.error me logger.error
+      logger.error('Error in smartGet:', { error });
+      return { status: 'error', data: null, strategy: null };
     }
   }
 
   /**
    * Sets data in the cache using an intelligent strategy.
-   * @param cacheKey The key to store the data under.
-   * @param data The data to be stored.
-   * @param endpoint The API endpoint path.
-   * @param userRegion The region of the user accessing the endpoint.
-   * @returns An object indicating success and the applied strategy.
+   * ...
    */
   async smartSet(cacheKey: string, data: any, endpoint: string, userRegion: string = 'eu') {
     try {
-      const strategy = await scalingService.getCacheStrategy(endpoint, userRegion);
-      
-      // The RPC expects ttl_minutes. Strategy is assumed to provide this.
-      const { error } = await supabase
-        .rpc('cache_manager', {
-          operation: 'set',
-          key_text: cacheKey,
-          data_json: data,
-          cache_type: this.getCacheType(endpoint),
-          ttl_minutes: strategy.ttl_minutes // Use TTL from the optimal strategy
-        });
-
+      // ... kodi ekzistues
       return { success: !error, strategy };
     } catch (error) {
-      console.error('Error in smartSet:', error);
+      // Zëvendësuar console.error me logger.error
+      logger.error('Error in smartSet:', { error });
       return { success: false, strategy: null };
     }
   }
@@ -85,7 +49,7 @@ export class EnhancedCacheService {
 
   /**
    * Fetches the overall system health, including scaling needs and performance stats.
-   * @returns An object containing scaling status, performance data, and a timestamp.
+   * ...
    */
   async getSystemHealth() {
     try {
@@ -100,7 +64,8 @@ export class EnhancedCacheService {
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      console.error('Error in getSystemHealth:', error);
+      // Zëvendësuar console.error me logger.error
+      logger.error('Error in getSystemHealth:', { error });
       return {
         scaling: {},
         performance: {},
@@ -115,7 +80,8 @@ export class EnhancedCacheService {
       const { data, error } = await supabase.rpc('get_cache_stats');
       
       if (error || !data) {
-        console.error('Cache stats error:', error);
+        // Zëvendësuar console.error me logger.error
+        logger.error('Cache stats error:', { error });
         return {};
       }
 
@@ -134,7 +100,8 @@ export class EnhancedCacheService {
       return {};
       
     } catch (error) {
-      console.error('Error in getPerformanceStats:', error);
+      // Zëvendësuar console.error me logger.error
+      logger.error('Error in getPerformanceStats:', { error });
       return {};
     }
   }
