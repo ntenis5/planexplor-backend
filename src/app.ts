@@ -5,7 +5,7 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import pino from 'pino-http';
 import dotenv from 'dotenv';
-import 'express-async-errors'; // ✅ SHTUAR KËTU
+import 'express-async-errors';
 
 // Load env vars
 if (process.env.NODE_ENV !== 'production') {
@@ -34,14 +34,26 @@ const PORT = parseInt(process.env.PORT || '3000', 10);
 
 // --- Performance Optimizations ---
 
-// 1. Advanced Logging with Pino
-const logger = pino({
-  level: process.env.LOG_LEVEL || 'info',
-  transport: process.env.NODE_ENV === 'development' ? {
-    target: 'pino-pretty',
-    options: { colorize: true }
-  } : undefined
-});
+// 1. Advanced Logging with Pino - FIXED ✅
+const loggerOptions = {
+  level: process.env.LOG_LEVEL || 'info'
+};
+
+// Vetëm në development përdor pino-pretty
+if (process.env.NODE_ENV === 'development') {
+  try {
+    // Kontrollo nëse pino-pretty është i disponueshëm
+    const pinoPretty = await import('pino-pretty');
+    loggerOptions.transport = {
+      target: 'pino-pretty',
+      options: { colorize: true }
+    };
+  } catch (error) {
+    console.log('⚠️  pino-pretty not available, using default JSON logger');
+  }
+}
+
+const logger = pino(loggerOptions);
 app.use(logger);
 
 // 2. Advanced CORS Configuration
