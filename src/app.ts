@@ -81,7 +81,7 @@ app.use('/api/analytics', analyticsRouter);
 // --- Basic Endpoints ---
 app.get('/', (req, res) => {
   res.status(200).json({ 
-    message: '🚀 Placexplor Backend API is running!',
+    message: '🚀 Planexplor Backend API is running!',
     health: '/health',
     systemHealth: '/system-health',
     timestamp: new Date().toISOString(),
