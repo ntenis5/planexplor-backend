@@ -11,8 +11,7 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "typeRoots": ["./node_modules/@types", "./@types"],
-    "allowImportingTsExtensions": true,
-    "noEmitOnError": true 
+    "allowJs": true
   },
   "include": ["src/**/*", "@types/**/*"],
   "exclude": ["node_modules", "dist"]
