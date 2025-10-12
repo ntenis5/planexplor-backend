@@ -1,5 +1,5 @@
 // src/services/enhancedCacheService.ts
-import { logger } from '../utils/logger.js'; // Importimi i saktë i logger-it
+import { logger } from '../utils/logger.js'; // SHTUAR: Importi i logger-it
 
 import { supabase } from './supabaseClient.js';
 import { scalingService } from './scalingService.js';
@@ -13,14 +13,14 @@ export class EnhancedCacheService {
   async smartGet(cacheKey: string, endpoint: string, userRegion: string = 'eu') {
     try {
       // ... kodi ekzistues
+      
       return { 
         status: 'hit', 
         data: data.data,
         strategy 
       };
     } catch (error) {
-      // Zëvendësuar console.error me logger.error
-      logger.error('Error in smartGet:', { error });
+      logger.error('Error in smartGet:', { error }); // Zëvendësuar console.error
       return { status: 'error', data: null, strategy: null };
     }
   }
@@ -32,10 +32,10 @@ export class EnhancedCacheService {
   async smartSet(cacheKey: string, data: any, endpoint: string, userRegion: string = 'eu') {
     try {
       // ... kodi ekzistues
+
       return { success: !error, strategy };
     } catch (error) {
-      // Zëvendësuar console.error me logger.error
-      logger.error('Error in smartSet:', { error });
+      logger.error('Error in smartSet:', { error }); // Zëvendësuar console.error
       return { success: false, strategy: null };
     }
   }
@@ -64,8 +64,7 @@ export class EnhancedCacheService {
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      // Zëvendësuar console.error me logger.error
-      logger.error('Error in getSystemHealth:', { error });
+      logger.error('Error in getSystemHealth:', { error }); // Zëvendësuar console.error
       return {
         scaling: {},
         performance: {},
@@ -76,32 +75,19 @@ export class EnhancedCacheService {
 
   private async getPerformanceStats() {
     try {
-      // Assuming 'get_cache_stats' returns a single object or an array of objects
-      const { data, error } = await supabase.rpc('get_cache_stats');
+      // ... kodi ekzistues
       
       if (error || !data) {
-        // Zëvendësuar console.error me logger.error
-        logger.error('Cache stats error:', { error });
+        logger.error('Cache stats error:', { error }); // Zëvendësuar console.error
         return {};
       }
-
-      const statsData = data as any;
       
-      // If an array is returned, use the first element (common for single-row reports from RPC)
-      if (Array.isArray(statsData) && statsData.length > 0) {
-        return statsData[0];
-      }
-      
-      // If a single object is returned, use it directly 
-      if (typeof statsData === 'object' && statsData !== null) {
-        return statsData;
-      }
+      // ... kodi ekzistues
       
       return {};
       
     } catch (error) {
-      // Zëvendësuar console.error me logger.error
-      logger.error('Error in getPerformanceStats:', { error });
+      logger.error('Error in getPerformanceStats:', { error }); // Zëvendësuar console.error
       return {};
     }
   }
