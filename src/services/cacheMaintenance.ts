@@ -1,8 +1,8 @@
 // src/services/cacheMaintenance.ts
-import { logger } from '../utils/logger.js'; // Importimi i saktë i logger-it
+import { logger } from '../utils/logger.js'; // SHTUAR: Importi i logger-it
 
 import { cacheService } from './cacheService.js';
-import * as os from 'os';
+import * as os from 'os'; // Added for Node.js typing consistency with global objects like NodeJS.Timeout
 
 export class CacheMaintenance {
   private cleanupInterval: NodeJS.Timeout | null = null;
@@ -14,13 +14,11 @@ export class CacheMaintenance {
     // Clean up cache every 6 hours
     this.cleanupInterval = setInterval(async () => {
       try {
-        // Zëvendësuar console.log me logger.info
-        logger.info('🔄 Running scheduled cache cleanup...'); 
+        logger.info('🔄 Running scheduled cache cleanup...'); // Zëvendësuar console.log
         const result = await cacheService.cleanupCache();
-        logger.info('✅ Cache cleanup completed:', { result }); // Zëvendësuar console.log
+        logger.info('✅ Cache cleanup completed:', { result }); // Zëvendësuar console.log (e kalojmë rezultatin si objekt për logim të strukturuar)
       } catch (error) {
-        // Zëvendësuar console.error me logger.error
-        logger.error('❌ Cache cleanup failed:', { error }); 
+        logger.error('❌ Cache cleanup failed:', { error }); // Zëvendësuar console.error
       }
     }, 6 * 60 * 60 * 1000); // 6 hours
   }
