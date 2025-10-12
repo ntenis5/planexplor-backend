@@ -9,8 +9,9 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "typeRoots": ["./node_modules/@types", "./@types"] // Shto ketu dosjen tuaj te re @types
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "@types/**/*"], // Sigurohuni qe te perfshije skedarin e ri .d.ts
   "exclude": ["node_modules", "dist"]
 }
