@@ -3,7 +3,9 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
-import 'express-async-errors';
+// RREGULLIMI: Përdorim 'require()' për të zgjidhur gabimin ERR_MODULE_NOT_FOUND
+// Në ESM, kjo pako globale duhet të importohet kështu për stabilitet.
+require('express-async-errors'); 
 import pino from 'pino-http';
 import dotenv from 'dotenv';
 
@@ -152,7 +154,8 @@ app.get('/system-health', async (req: Request, res: Response) => {
       ...healthWithoutTimestamp
     });
   } catch (error: any) {
-    req.log.error('System Health Check Failed:', error);
+    // Gabimi i logut pino (nëse nuk e keni zgjidhur me @types)
+    (req as any).log.error('System Health Check Failed:', error);
     res.status(503).json({ 
       status: 'unhealthy', 
       error: 'Service temporarily unavailable',
@@ -163,7 +166,8 @@ app.get('/system-health', async (req: Request, res: Response) => {
 
 // --- Global Error Handling ---
 app.use((error: any, req: Request, res: Response, next: NextFunction) => {
-  req.log.error(error);
+  // Gabimi i logut pino (nëse nuk e keni zgjidhur me @types)
+  (req as any).log.error(error);
   
   if (error.message?.includes('cache')) {
     res.status(503).json({
