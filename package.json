@@ -1,6 +1,6 @@
 {
   "name": "planexplor-backend",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "description": "Backend services for Planexplor application.",
   "main": "dist/app.js",
   "type": "module", 
