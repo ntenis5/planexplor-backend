@@ -1,5 +1,5 @@
 // src/services/enhancedCacheService.ts
-import { logger } from '../utils/logger.js'; // SHTUAR: Importi i logger-it
+import { logger } from '../utils/logger.js'; // SHTUAR DHE FIKSUAR: Importo logger-in
 
 import { supabase } from './supabaseClient.js';
 import { scalingService } from './scalingService.js';
@@ -21,7 +21,7 @@ export class EnhancedCacheService {
       };
     } catch (error) {
       logger.error('Error in smartGet:', { error }); // Zëvendësuar console.error
-      return { status: 'error', data: null, strategy: null };
+      return { status: 'error', data: null, strategy: null }; // Added strategy: null on outer error
     }
   }
 
@@ -81,7 +81,7 @@ export class EnhancedCacheService {
         logger.error('Cache stats error:', { error }); // Zëvendësuar console.error
         return {};
       }
-      
+
       // ... kodi ekzistues
       
       return {};
