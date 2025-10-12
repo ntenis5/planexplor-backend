@@ -1,8 +1,8 @@
 // src/services/cacheMaintenance.ts
-import { logger } from '../utils/logger.js'; // FIKSUAR: Importimi i logger-it
+import { logger } from '../utils/logger.js'; // ZGJIDHUR: Importon modulin e ri logger
 
 import { cacheService } from './cacheService.js';
-import * as os from 'os'; // Added for Node.js typing consistency with global objects like NodeJS.Timeout
+import * as os from 'os';
 
 export class CacheMaintenance {
   private cleanupInterval: NodeJS.Timeout | null = null;
