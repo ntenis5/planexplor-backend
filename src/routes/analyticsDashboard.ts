@@ -1,13 +1,10 @@
-// src/routes/analyticsDashboard.ts
 import { Router, Request, Response } from 'express';
 import { analyticsService } from '../services/analyticsService.js';
 
 const analyticsRouter = Router();
 
-// 📊 REALTIME DASHBOARD
 analyticsRouter.get('/realtime', async (req: Request, res: Response) => {
   try {
-    // Using existing method until getRealtimeDashboard is implemented
     const data = await analyticsService.generateDailyReport();
     res.json({ success: true, data });
   } catch (error) {
@@ -16,11 +13,9 @@ analyticsRouter.get('/realtime', async (req: Request, res: Response) => {
   }
 });
 
-// 💰 COST ANALYSIS
 analyticsRouter.get('/cost-analysis', async (req: Request, res: Response) => {
   try {
-    // Using a local function until service implementation is ready
-    const data = await fetchCostAnalysisData(); // Renamed local function
+    const data = await fetchCostAnalysisData();
     res.json({ success: true, data });
   } catch (error) {
     console.error('Cost analysis error:', error);
@@ -28,11 +23,9 @@ analyticsRouter.get('/cost-analysis', async (req: Request, res: Response) => {
   }
 });
 
-// 🌍 REGIONAL PERFORMANCE
 analyticsRouter.get('/regional', async (req: Request, res: Response) => {
   try {
-    // Using a local function until service implementation is ready
-    const data = await fetchRegionalPerformanceData(); // Renamed local function
+    const data = await fetchRegionalPerformanceData();
     res.json({ success: true, data });
   } catch (error) {
     console.error('Regional performance error:', error);
@@ -40,7 +33,6 @@ analyticsRouter.get('/regional', async (req: Request, res: Response) => {
   }
 });
 
-// 📈 DAILY REPORT
 analyticsRouter.get('/daily-report', async (req: Request, res: Response) => {
   try {
     const data = await analyticsService.generateDailyReport();
@@ -51,7 +43,6 @@ analyticsRouter.get('/daily-report', async (req: Request, res: Response) => {
   }
 });
 
-// 🚨 ANOMALY DETECTION
 analyticsRouter.get('/anomalies', async (req: Request, res: Response) => {
   try {
     const data = await analyticsService.checkAnomalies(req.query);
@@ -62,9 +53,7 @@ analyticsRouter.get('/anomalies', async (req: Request, res: Response) => {
   }
 });
 
-// Helper functions for mock data
 async function fetchCostAnalysisData(): Promise<any> {
-  // Simple mock implementation - can be made more complex
   return {
     totalCost: 0,
     savings: 0,
@@ -77,7 +66,6 @@ async function fetchCostAnalysisData(): Promise<any> {
 }
 
 async function fetchRegionalPerformanceData(): Promise<any> {
-  // Simple mock implementation - can be made more complex
   return {
     regions: [
       { name: 'Europe', performance: 95 },
