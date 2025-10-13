@@ -1,8 +1,20 @@
 FROM node:18-alpine
 WORKDIR /app
+
+# Kopjo package files
 COPY package*.json ./
-RUN npm ci --only=production
+
+# Përdor npm install në vend të npm ci
+RUN npm install --omit=dev
+
+# Kopjo të gjithë kodin
 COPY . .
+
+# Build aplikacionin
 RUN npm run build
-EXPOSE 3000
+
+# Expose portin që përdor Railway (8080)
+EXPOSE 8080
+
+# Nis aplikacionin
 CMD ["npm", "start"]
