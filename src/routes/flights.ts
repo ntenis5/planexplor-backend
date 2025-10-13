@@ -1,11 +1,9 @@
-// src/routes/flights.ts
 import { Router, Request, Response } from 'express';
 import { travelPayoutsService } from '../services/travelpayoutsService.js';
 import { enhancedCacheService } from '../services/enhancedCacheService.js';
 
 const flightsRouter = Router();
 
-// 🔍 KËRKIM I FLUTURIMEVE
 flightsRouter.get('/search', async (req: Request, res: Response) => {
   const { origin, destination, departDate, returnDate, adults, children, infants } = req.query;
 
@@ -18,7 +16,6 @@ flightsRouter.get('/search', async (req: Request, res: Response) => {
   try {
     const cacheKey = `flights_${origin}_${destination}_${departDate}_${returnDate}_${adults}_${children}_${infants}`;
     
-    // 1. PROVO CACHE
     const cachedResults = await enhancedCacheService.smartGet(
       cacheKey, 
       'flights_search', 
@@ -34,8 +31,7 @@ flightsRouter.get('/search', async (req: Request, res: Response) => {
       });
     }
 
-    // 2. KËRKO FLUTURIME TË REJA
-    console.log('🔄 Fetching fresh flights data from TravelPayouts...');
+    console.log('Fetching fresh flights data from TravelPayouts...');
     
     const flights = await travelPayoutsService.searchFlights({
       origin: origin as string,
@@ -47,7 +43,6 @@ flightsRouter.get('/search', async (req: Request, res: Response) => {
       infants: parseInt(infants as string) || 0
     });
 
-    // 3. RUAJ NË CACHE
     await enhancedCacheService.smartSet(
       cacheKey,
       flights,
@@ -71,7 +66,6 @@ flightsRouter.get('/search', async (req: Request, res: Response) => {
   }
 });
 
-// 💰 FLUTURIME MË TË LIRA
 flightsRouter.get('/cheapest', async (req: Request, res: Response) => {
   const { origin, destination } = req.query;
 
@@ -101,7 +95,6 @@ flightsRouter.get('/cheapest', async (req: Request, res: Response) => {
       destination as string
     );
 
-    // RUAJ NË CACHE
     await enhancedCacheService.smartSet(
       cacheKey,
       cheapestFlights,
@@ -121,7 +114,6 @@ flightsRouter.get('/cheapest', async (req: Request, res: Response) => {
   }
 });
 
-// 🗺️ SUGJERIME DESTINACIONESH
 flightsRouter.get('/suggestions', async (req: Request, res: Response) => {
   const { query } = req.query;
 
@@ -148,7 +140,6 @@ flightsRouter.get('/suggestions', async (req: Request, res: Response) => {
 
     const suggestions = await travelPayoutsService.getDestinationSuggestions(query as string);
 
-    // RUAJ NË CACHE
     await enhancedCacheService.smartSet(
       cacheKey,
       suggestions,
@@ -168,7 +159,6 @@ flightsRouter.get('/suggestions', async (req: Request, res: Response) => {
   }
 });
 
-// 🏙️ LISTA E AEROPORTEVE
 flightsRouter.get('/airports', async (req: Request, res: Response) => {
   try {
     const cacheKey = 'all_airports';
@@ -189,7 +179,6 @@ flightsRouter.get('/airports', async (req: Request, res: Response) => {
 
     const airports = await travelPayoutsService.getAirports();
 
-    // RUAJ NË CACHE
     await enhancedCacheService.smartSet(
       cacheKey,
       airports,
