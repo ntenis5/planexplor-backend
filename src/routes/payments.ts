@@ -1,10 +1,7 @@
-// src/routes/payments.ts 
-
 import express, { Request, Response } from 'express'; 
 import Stripe from 'stripe';
 import { supabase } from '../services/supabaseClient.js';
 
-// --- Tipi për trupin e kërkesës POST /create-intent ---
 interface CreateIntentBody {
   package_type: 'mini' | 'standard' | 'custom';
   custom_views?: number;
@@ -17,9 +14,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2023-08-16',
 });
 
-// ----------------------------------------------------------------------------------
-// FUNKSIONI PËR WEBHOOK
-// ----------------------------------------------------------------------------------
 async function handleSuccessfulPayment(paymentIntent: Stripe.PaymentIntent) {
   try {
     const { views_count, campaign_id } = paymentIntent.metadata;
@@ -51,22 +45,19 @@ async function handleSuccessfulPayment(paymentIntent: Stripe.PaymentIntent) {
   }
 }
 
-// ----------------------------------------------------------------------------------
-// ENDPOINT: POST /api/payments/create-intent
-// ----------------------------------------------------------------------------------
 paymentsRouter.post('/create-intent', async (req: Request<{}, {}, CreateIntentBody>, res: Response) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
     const { package_type, custom_views, campaign_id } = req.body;
 
     if (!token || !campaign_id) {
-      return res.status(400).json({ error: 'Token-i dhe ID e fushatës janë të nevojshme.' });
+      return res.status(400).json({ error: 'Token and campaign ID are required.' });
     }
 
     const { data: { user }, error } = await supabase.auth.getUser(token);
     
     if (error || !user) {
-      return res.status(401).json({ error: 'Token-i i pavlefshëm.' });
+      return res.status(401).json({ error: 'Invalid token.' });
     }
 
     let amount = 0;
@@ -83,10 +74,9 @@ paymentsRouter.post('/create-intent', async (req: Request<{}, {}, CreateIntentBo
       views_count = custom_views;
       amount = Math.round(custom_views * PRICE_PER_VIEW);
     } else {
-      return res.status(400).json({ error: 'Lloji i paketës i pavlefshëm ose shikimet mungojnë.' });
+      return res.status(400).json({ error: 'Invalid package type or missing views.' });
     }
     
-    // 1. Gjej/Krijo Stripe Customer ID
     let customerId: string;
 
     const { data: existingCustomer } = await supabase
@@ -107,7 +97,6 @@ paymentsRouter.post('/create-intent', async (req: Request<{}, {}, CreateIntentBo
       customerId = customer.id;
     }
 
-    // 2. Krijon Payment Intent
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency: 'eur',
@@ -121,7 +110,6 @@ paymentsRouter.post('/create-intent', async (req: Request<{}, {}, CreateIntentBo
       }
     });
 
-    // 3. Regjistro pagesën fillestare (Pending)
     await supabase
       .from('payments')
       .insert({
@@ -147,9 +135,6 @@ paymentsRouter.post('/create-intent', async (req: Request<{}, {}, CreateIntentBo
   }
 });
 
-// ----------------------------------------------------------------------------------
-// ENDPOINT: POST /api/payments/webhook
-// ----------------------------------------------------------------------------------
 paymentsRouter.post('/webhook', express.raw({type: 'application/json'}), async (req: Request, res: Response) => {
   const sig = req.headers['stripe-signature']!;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
@@ -159,7 +144,6 @@ paymentsRouter.post('/webhook', express.raw({type: 'application/json'}), async (
     event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
   } catch (err) {
     console.error('Webhook signature verification failed.');
-    // @ts-ignore
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
