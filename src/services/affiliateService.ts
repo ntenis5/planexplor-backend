@@ -1,7 +1,5 @@
-// src/services/affiliateService.ts
 import axios from 'axios';
 import { cacheService } from './cacheService.js';
-import { supabase } from './supabaseClient.js'; 
 
 interface SearchParams {
   category: 'all' | 'hotel' | 'flight' | 'package';
@@ -38,44 +36,30 @@ interface SearchResult {
   category: string[];
 }
 
-// Search Cache Time To Live (1 hour)
-const SEARCH_CACHE_TTL_SECONDS = 3600; 
+const SEARCH_CACHE_TTL_SECONDS = 3600;
 
 export class AffiliateService {
   private cacheService = cacheService;
 
-  constructor() {
-    // Uses the existing instance from cacheService
-  }
-
   async search(params: SearchParams): Promise<SearchResult[]> {
     const cacheKey = this.generateCacheKey(params);
     
-    // Try to get from cache first
     const cachedResults = await this.cacheService.manageCache('get', cacheKey);
     if (cachedResults) {
-      // NOTE: Syntax fix - cachedResults from cache is likely a JSON string, 
-      // so it needs to be parsed before filtering. Assuming manageCache handles JSON parsing internally 
-      // or that the type is correctly inferred as SearchResult[].
       return this.filterResults(cachedResults as SearchResult[], params);
     }
 
-    // If not in cache, get from affiliate partners
     const allResults = await this.fetchFromAllPartners(params);
     
-    // Cache the results
     await this.cacheService.manageCache('set', cacheKey, allResults, {
-      ttl: SEARCH_CACHE_TTL_SECONDS / 60, // Convert to minutes
+      ttl: SEARCH_CACHE_TTL_SECONDS / 60,
       cacheType: 'affiliate'
     });
     
     return this.filterResults(allResults, params);
   }
 
-  // --- Private Functions ---
-
   private generateCacheKey(params: SearchParams): string {
-    // Syntax note: Backticks are preferred for template literals: `...`
     return `affiliate_search_${params.category}_${params.destination}_${params.budget}`;
   }
 
@@ -96,7 +80,6 @@ export class AffiliateService {
   }
 
   private async fetchFromPartner(partner: string, params: SearchParams): Promise<SearchResult[]> {
-    // Mock implementation - replace with actual API calls
     switch (partner) {
       case 'booking':
         return this.mockBookingAPI(params);
@@ -114,28 +97,24 @@ export class AffiliateService {
   private filterResults(results: SearchResult[], params: SearchParams): SearchResult[] {
     let filtered = results;
 
-    // Filter by category
     if (params.category !== 'all') {
       filtered = filtered.filter(item => item.type === params.category);
     }
 
-    // Filter by budget range (±20% - Adjusted logic: Max price should be <= budget)
     if (params.budget) {
       const minBudget = params.budget * 0.8;
-      const maxBudget = params.budget; // Max price is the budget itself
+      const maxBudget = params.budget;
       filtered = filtered.filter(item => 
         item.price >= minBudget && item.price <= maxBudget
       );
     }
 
-    // Filter by distance
     if (params.distance > 0) {
       filtered = filtered.filter(item => 
         item.distance <= params.distance
       );
     }
 
-    // Sort by relevance (distance + rating + price)
     filtered.sort((a, b) => {
       const scoreA = this.calculateRelevanceScore(a, params);
       const scoreB = this.calculateRelevanceScore(b, params);
@@ -148,27 +127,23 @@ export class AffiliateService {
   private calculateRelevanceScore(result: SearchResult, params: SearchParams): number {
     let score = 0;
     
-    // Distance score (closer is better)
     if (params.distance > 0) {
       const distanceRatio = 1 - (result.distance / params.distance);
-      score += distanceRatio * 40; // 40% weight
+      score += distanceRatio * 40;
     }
     
-    // Rating score
-    if (result.rating !== undefined) { // Check for undefined instead of falsy 0
-      score += (result.rating / 5) * 30; // 30% weight
+    if (result.rating !== undefined) {
+      score += (result.rating / 5) * 30;
     }
     
-    // Price score (cheaper is better within budget)
     if (params.budget) {
       const priceRatio = 1 - (result.price / params.budget);
-      score += Math.max(0, priceRatio) * 30; // 30% weight, max 0 to prevent negative scores for over-budget items
+      score += Math.max(0, priceRatio) * 30;
     }
     
     return score;
   }
 
-  // Mock API implementations
   private async mockBookingAPI(params: SearchParams): Promise<SearchResult[]> {
     return [
       {
@@ -267,7 +242,6 @@ export class AffiliateService {
 export async function updateAffiliateData(): Promise<void> {
   const affiliateService = new AffiliateService();
   
-  // Update cache for popular search combinations
   const popularSearches: SearchParams[] = [
     {
       category: 'all',
@@ -288,4 +262,4 @@ export async function updateAffiliateData(): Promise<void> {
       console.error('Error updating affiliate data:', error);
     }
   }
-  }
+    }
