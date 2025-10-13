@@ -1,32 +1,20 @@
 import type { Request, Response } from 'express'; 
-// ✅ RREGULLIMI: Shtuar .js
 import { AffiliateService } from '../services/affiliateService.js'; 
-// ✅ RREGULLIMI: Shtuar .js
 import { CacheService } from '../services/cacheService.js'; 
 
 const affiliateService = new AffiliateService();
 const cacheService = CacheService.getInstance(); 
 
-// ⏳ Konstante: Koha e skadimit e rezultateve të kërkimit (30 minuta)
-const SEARCH_CACHE_TTL = 30 * 60; // 1800 sekonda
+const SEARCH_CACHE_TTL = 30 * 60;
 
-/**
- * Krijon një çelës unik të cache-it nga parametrat e kërkimit.
- */
 function generateCacheKey(params: any): string {
-    // Përdorim JSON.stringify me një funksion zëvendësues (replacer function)
-    // për të siguruar renditjen e çelësave nëse rendi i tyre ndryshon gjatë dërgimit.
     const sortedKeys = Object.keys(params).sort();
     const sortedParamsString = JSON.stringify(params, sortedKeys);
     return `search_results_${sortedParamsString}`;
 }
 
-/**
- * Funksioni Kryesor i Kërkimit. Përfshin logjikën e Caching-ut.
- */
 export async function handleSearchRequest(req: Request, res: Response) {
     let isCached = false;
-    // Për kërkesat POST, trupi duhet të jetë objekti (req.body)
     const body = req.body || {}; 
     
     try {
@@ -41,7 +29,6 @@ export async function handleSearchRequest(req: Request, res: Response) {
             user_location
         } = body; 
 
-        // 1. Validimi
         if (!destination || !user_location) {
             return res.status(400).json({
                 error: 'Destination and user location are required'
@@ -61,18 +48,11 @@ export async function handleSearchRequest(req: Request, res: Response) {
 
         const cacheKey = generateCacheKey(searchParams);
 
-        // 2. KONTROLLO CACHE-IN
-        // ✅ RREGULLIMI: handleSearchRequest mund të mos ketë nevojë të japë TTL në getFromCache
-        // vetëm nëse `getFromCache` është shkruar për të marrë vetëm 1 argument.
-        // Për siguri, do të supozojmë versionin e rregulluar të cacheService që ne e dimë.
         const cachedResults = await cacheService.getFromCache(cacheKey); 
-        // Nëse `getFromCache` pret 2 argumente (çelësin dhe TTL), përdorni: 
-        // const cachedResults = await cacheService.getFromCache(cacheKey, SEARCH_CACHE_TTL);
-
 
         if (cachedResults) {
             isCached = true;
-            console.log(`✅ Kërkesa u shërbye nga Cache: ${cacheKey}`);
+            console.log(`Request served from cache: ${cacheKey}`);
             
             return res.status(200).json({
                 results: cachedResults,
@@ -83,17 +63,13 @@ export async function handleSearchRequest(req: Request, res: Response) {
             });
         }
 
-        // 3. NËSE S'KA CACHE: Ekzekuto kërkesën e vërtetë
         const results = await affiliateService.search(searchParams);
 
-        // 4. RUAJ NË CACHE
         if (results.length > 0) {
-            // ✅ RREGULLIMI KRITIK: Shtuar SEARCH_CACHE_TTL si argumentin e dytë
             await cacheService.setToCache(cacheKey, results, SEARCH_CACHE_TTL); 
-            console.log(`💾 Rezultati i ri u ruajt në Cache: ${cacheKey}`);
+            console.log(`New result saved to cache: ${cacheKey}`);
         }
 
-        // 5. Kthe përgjigjen
         return res.status(200).json({
             results,
             metadata: {
@@ -113,5 +89,4 @@ export async function handleSearchRequest(req: Request, res: Response) {
     }
 }
 
-// ZGJIDHJA e gabimit 'no default export':
 export default handleSearchRequest;
