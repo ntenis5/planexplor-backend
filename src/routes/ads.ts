@@ -1,33 +1,24 @@
-// src/routes/ads.ts
-
 import { Router, Request, Response } from 'express';
-// ✅ Importi me .js
 import { supabase } from '../services/supabaseClient.js';
 
-// --- Tipi për trupin e kërkesës (Body Type) ---
 interface CreateCampaignBody {
   title: string;
   image_url: string;
   target_categories: string[];
   views_count: number;
-  time_slots: string[]; // Supozojmë një array string-ash (p.sh., orët/ditët)
+  time_slots: string[];
   total_cost: number;
 }
 
-// Përdorim Router-in e saktë
 const adsRouter = Router();
 
-// ----------------------------------------------------------------------------------
-// ENDPOINT: GET /api/ads/packages
-// Merr paketat e reklamave
-// ----------------------------------------------------------------------------------
 adsRouter.get('/packages', async (req: Request, res: Response) => {
   try {
     const packages = [
       {
         id: 'mini',
         name: 'Mini Package',
-        price: 20, // 20€
+        price: 20,
         views_count: 40,
         price_per_view: 0.50,
         description: '40 views for 20€'
@@ -35,8 +26,8 @@ adsRouter.get('/packages', async (req: Request, res: Response) => {
       {
         id: 'standard',
         name: 'Standard Package',
-        price: 90, // 90€
-        views_count: 200, // 0.45€ per view
+        price: 90,
+        views_count: 200,
         price_per_view: 0.45,
         description: '200 views for 90€ (5% discount)'
       },
@@ -44,7 +35,7 @@ adsRouter.get('/packages', async (req: Request, res: Response) => {
         id: 'custom',
         name: 'Custom Package',
         price_per_view: 0.50,
-        description: 'Zgjidhni numrin tuaj të shikimeve'
+        description: 'Choose your number of views'
       }
     ];
 
@@ -56,15 +47,10 @@ adsRouter.get('/packages', async (req: Request, res: Response) => {
   }
 });
 
-// ----------------------------------------------------------------------------------
-// ENDPOINT: POST /api/ads/campaigns
-// Krijon fushatën e reklamave (me status 'pending_payment')
-// ----------------------------------------------------------------------------------
 adsRouter.post('/campaigns', async (req: Request<{}, {}, CreateCampaignBody>, res: Response) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
     
-    // De-strukturimi me saktësi nga trupi i tipizuar
     const {
       title,
       image_url,
@@ -75,20 +61,18 @@ adsRouter.post('/campaigns', async (req: Request<{}, {}, CreateCampaignBody>, re
     } = req.body;
 
     if (!token) {
-      return res.status(401).json({ error: 'Nuk u ofrua token-i i autentifikimit.' });
+      return res.status(401).json({ error: 'No authentication token provided.' });
     }
     if (!title || !image_url || !views_count || !total_cost) {
-         return res.status(400).json({ error: 'Fusha thelbësore mungon.' });
+         return res.status(400).json({ error: 'Required fields are missing.' });
     }
 
-    // 1. Verifikimi i Përdoruesit
     const { data: { user }, error } = await supabase.auth.getUser(token);
     
     if (error || !user) {
-      return res.status(401).json({ error: 'Token-i i pavlefshëm ose i skaduar.' });
+      return res.status(401).json({ error: 'Invalid or expired token.' });
     }
 
-    // 2. Krijimi i Fushatës me statusin e Pagesës në Pritje
     const { data: campaign, error: campaignError } = await supabase
       .from('ad_campaigns')
       .insert({
@@ -100,20 +84,19 @@ adsRouter.post('/campaigns', async (req: Request<{}, {}, CreateCampaignBody>, re
         views_delivered: 0,
         total_cost,
         time_slots,
-        status: 'pending_payment' // ✅ Statusi fillestar korrekt
+        status: 'pending_payment'
       })
       .select()
       .single();
 
     if (campaignError) {
       console.error('Supabase Campaign Error:', campaignError.message);
-      return res.status(400).json({ error: 'Dështim në krijimin e fushatës.' });
+      return res.status(400).json({ error: 'Failed to create campaign.' });
     }
 
-    // 3. Kthe Fushatën e Krijuar
     res.status(201).json({ 
         campaign,
-        message: 'Fushata u krijua me sukses. Tani kërkohet pagesa.'
+        message: 'Campaign created successfully. Payment required.'
     });
 
   } catch (error) {
@@ -122,25 +105,20 @@ adsRouter.post('/campaigns', async (req: Request<{}, {}, CreateCampaignBody>, re
   }
 });
 
-// ----------------------------------------------------------------------------------
-// ENDPOINT: GET /api/ads/campaigns
-// Merr fushatat e reklamave të përdoruesit
-// ----------------------------------------------------------------------------------
 adsRouter.get('/campaigns', async (req: Request, res: Response) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
 
     if (!token) {
-      return res.status(401).json({ error: 'Nuk u ofrua token-i i autentifikimit.' });
+      return res.status(401).json({ error: 'No authentication token provided.' });
     }
 
     const { data: { user }, error } = await supabase.auth.getUser(token);
     
     if (error || !user) {
-      return res.status(401).json({ error: 'Token-i i pavlefshëm.' });
+      return res.status(401).json({ error: 'Invalid token.' });
     }
 
-    // Merr fushatat e përdoruesit
     const { data: campaigns, error: campaignsError } = await supabase
       .from('ad_campaigns')
       .select('*')
@@ -149,7 +127,7 @@ adsRouter.get('/campaigns', async (req: Request, res: Response) => {
 
     if (campaignsError) {
       console.error('Supabase Get Campaigns Error:', campaignsError.message);
-      return res.status(500).json({ error: 'Dështim në marrjen e fushatave.' });
+      return res.status(500).json({ error: 'Failed to fetch campaigns.' });
     }
 
     res.json({ campaigns });
