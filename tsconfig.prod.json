@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "sourceMap": false,
+    "removeComments": true,
+    "noEmitOnError": true,
+    "strict": true,
+    "incremental": false
+  }
+}
