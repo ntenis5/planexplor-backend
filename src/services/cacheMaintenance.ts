@@ -1,39 +1,26 @@
-// src/services/cacheMaintenance.ts
-import { logger } from '../utils/logger.js'; // ZGJIDHUR: Importon logger-in e ri
-
+import { logger } from '../utils/logger.js';
 import { cacheService } from './cacheService.js';
-import * as os from 'os';
 
 export class CacheMaintenance {
   private cleanupInterval: NodeJS.Timeout | null = null;
 
-  /**
-   * Starts a scheduled cache cleanup process.
-   */
   startScheduledCleanup() {
     this.cleanupInterval = setInterval(async () => {
       try {
-        // Zëvendësuar console.log me logger.info
-        logger.info('🔄 Running scheduled cache cleanup...'); 
+        logger.info('Running scheduled cache cleanup...'); 
         const result = await cacheService.cleanupCache();
-        // Zëvendësuar console.log
-        logger.info('✅ Cache cleanup completed:', { result });
+        logger.info('Cache cleanup completed:', { result });
       } catch (error) {
-        // Zëvendësuar console.error
-        logger.error('❌ Cache cleanup failed:', { error });
+        logger.error('Cache cleanup failed:', { error });
       }
-    }, 6 * 60 * 60 * 1000); // 6 hours
+    }, 6 * 60 * 60 * 1000);
   }
 
-  /**
-   * Stops the scheduled cache cleanup process.
-   */
   stopScheduledCleanup() {
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
       this.cleanupInterval = null;
-      // Zëvendësuar console.log
-      logger.info('🛑 Scheduled cache cleanup stopped.');
+      logger.info('Scheduled cache cleanup stopped.');
     }
   }
 }
