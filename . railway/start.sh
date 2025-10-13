@@ -1,14 +1,25 @@
 #!/bin/bash
-# Railway Start Script - Performance Optimized
+# Railway Start Script - Robust Version
 
+set -e  # Exit on any error
+
+echo "🚀 Starting Planexplor Backend..."
+
+# Check if dist directory exists
+if [ ! -d "dist" ]; then
+  echo "❌ dist directory not found. Building..."
+  npm run build
+fi
+
+# Check if app.js exists
+if [ ! -f "dist/app.js" ]; then
+  echo "❌ dist/app.js not found. Building..."
+  npm run build
+fi
+
+# Set production environment
 export NODE_ENV=production
-export UV_THREADPOOL_SIZE=128
+export PORT=$PORT
 
-# Performance optimizations for Node.js
-exec node \
-  --max-old-space-size=4096 \
-  --max-semi-space-size=128 \
-  --v8-pool-size=4 \
-  --optimize-for-size \
-  --memory-reducer \
-  dist/app.js
+echo "✅ Starting application on port $PORT..."
+exec node dist/app.js
