@@ -1,11 +1,9 @@
-// src/routes/flights.ts
 import { Router, Request, Response } from 'express';
 import { travelPayoutsService } from '../services/travelpayoutsService.js';
 import { enhancedCacheService } from '../services/enhancedCacheService.js';
 
 const flightsRouter = Router();
 
-// Interface for flight search parameters
 interface FlightSearchParams {
   origin?: string;
   destination?: string;
@@ -16,12 +14,10 @@ interface FlightSearchParams {
   infants?: string;
 }
 
-// Interface for suggestion parameters
 interface SuggestionsParams {
   query?: string;
 }
 
-// 🔍 FLIGHT SEARCH
 flightsRouter.get('/search', async (req: Request, res: Response) => {
   const { origin, destination, departDate, returnDate, adults, children, infants } = req.query as FlightSearchParams;
 
@@ -32,10 +28,8 @@ flightsRouter.get('/search', async (req: Request, res: Response) => {
   }
 
   try {
-    // Generate a robust cache key
     const cacheKey = `flights_${origin}_${destination}_${departDate}_${returnDate || ''}_${adults || '1'}_${children || '0'}_${infants || '0'}`;
     
-    // 1. ATTEMPT CACHE HIT (smartGet uses adaptive strategy)
     const cachedResults = await enhancedCacheService.smartGet(
       cacheKey, 
       'flights_search', 
@@ -51,8 +45,7 @@ flightsRouter.get('/search', async (req: Request, res: Response) => {
       });
     }
 
-    // 2. FETCH NEW FLIGHTS (Cache Miss)
-    console.log('🔄 Fetching fresh flights data from TravelPayouts...');
+    console.log('Fetching fresh flights data from TravelPayouts...');
     
     const flights = await travelPayoutsService.searchFlights({
       origin,
@@ -64,7 +57,6 @@ flightsRouter.get('/search', async (req: Request, res: Response) => {
       infants: parseInt(infants || '0')
     });
 
-    // 3. STORE IN CACHE (smartSet uses the adaptive TTL from scalingService)
     await enhancedCacheService.smartSet(
       cacheKey,
       flights,
@@ -88,7 +80,6 @@ flightsRouter.get('/search', async (req: Request, res: Response) => {
   }
 });
 
-// 💰 CHEAPEST FLIGHTS
 flightsRouter.get('/cheapest', async (req: Request, res: Response) => {
   const { origin, destination } = req.query as FlightSearchParams;
 
@@ -99,7 +90,6 @@ flightsRouter.get('/cheapest', async (req: Request, res: Response) => {
   try {
     const cacheKey = `cheapest_flights_${origin}_${destination || 'any'}`;
     
-    // ATTEMPT CACHE HIT
     const cachedResults = await enhancedCacheService.smartGet(
       cacheKey, 
       'flights_cheapest', 
@@ -116,7 +106,6 @@ flightsRouter.get('/cheapest', async (req: Request, res: Response) => {
 
     const cheapestFlights = await travelPayoutsService.getCheapestFlights(origin, destination);
 
-    // STORE IN CACHE
     await enhancedCacheService.smartSet(
       cacheKey,
       cheapestFlights,
@@ -136,7 +125,6 @@ flightsRouter.get('/cheapest', async (req: Request, res: Response) => {
   }
 });
 
-// 🗺️ DESTINATION SUGGESTIONS
 flightsRouter.get('/suggestions', async (req: Request, res: Response) => {
   const { query } = req.query as SuggestionsParams;
 
@@ -147,7 +135,6 @@ flightsRouter.get('/suggestions', async (req: Request, res: Response) => {
   try {
     const cacheKey = `flight_suggestions_${query}`;
     
-    // ATTEMPT CACHE HIT
     const cachedResults = await enhancedCacheService.smartGet(
       cacheKey, 
       'flights_suggestions', 
@@ -164,7 +151,6 @@ flightsRouter.get('/suggestions', async (req: Request, res: Response) => {
 
     const suggestions = await travelPayoutsService.getDestinationSuggestions(query);
 
-    // STORE IN CACHE
     await enhancedCacheService.smartSet(
       cacheKey,
       suggestions,
@@ -184,12 +170,10 @@ flightsRouter.get('/suggestions', async (req: Request, res: Response) => {
   }
 });
 
-// 🏙️ AIRPORT LIST
 flightsRouter.get('/airports', async (req: Request, res: Response) => {
   try {
     const cacheKey = 'all_airports';
     
-    // ATTEMPT CACHE HIT
     const cachedResults = await enhancedCacheService.smartGet(
       cacheKey, 
       'flights_airports', 
@@ -206,7 +190,6 @@ flightsRouter.get('/airports', async (req: Request, res: Response) => {
 
     const airports = await travelPayoutsService.getAirports();
 
-    // STORE IN CACHE
     await enhancedCacheService.smartSet(
       cacheKey,
       airports,
