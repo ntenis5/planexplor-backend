@@ -1,17 +1,32 @@
 // src/services/supabaseClient.ts
 
 import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
+// Kujdes: Heqim 'dotenv' dhe 'dotenv.config()' sepse Railway i ngarkon 
+// variablat e mjedisit direkt në process.env.
 
-dotenv.config();
+// Përdor SERVICE KEY (të vendosur në Railway)
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY; 
 
-// Përdor SERVICE KEY që keni vendosur në Railway (për operacione të fuqishme të Backend-it)
-const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY!; 
-// Shënim: Kujdes që të keni vendosur edhe SUPABASE_URL.
+// 🚨 Kontrolli i qartë për Variablat Mjedisore
+if (!supabaseUrl || !supabaseServiceKey) {
+  const missingVars = [];
+  if (!supabaseUrl) missingVars.push('SUPABASE_URL');
+  if (!supabaseServiceKey) missingVars.push('SUPABASE_SERVICE_KEY');
+  
+  const errorMessage = `❌ Gabim i Konfigurimit (Fatal): Variablat e Supabase mungojnë: ${missingVars.join(', ')}. 
+  Sigurohuni që ato janë vendosur si Variabla Mjedisi në dashboardin e Railway.`;
+  
+  console.error(errorMessage);
+  // Nxjerrim gabim fatal në mënyrë që serveri të mos fillojë nëse çelësat mungojnë
+  throw new Error(errorMessage); 
+}
 
+// ----------------------------------------------------------------------------------
+// Inicializimi i Klientit
+// ----------------------------------------------------------------------------------
 export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-  // Përdorimi i service_key shmang nevojën për AutoRefreshToken këtu
+  // Përdorimi i Service Key e bën serverin stateless (pa menaxhim sesioni)
   auth: {
     autoRefreshToken: false, 
     persistSession: false,
@@ -19,8 +34,10 @@ export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   }
 });
 
-// Database types
-// Ky është një dokumentim i shkëlqyer i skemës së databazës.
+console.log('🔗 Supabase Client u inicializua me sukses duke përdorur Service Key.');
+
+
+// Database types (Mbajmë definicionet e tipeve të shkëlqyera)
 export interface UserProfile {
   id: string;
   username: string;
