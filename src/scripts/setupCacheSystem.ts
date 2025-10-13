@@ -1,21 +1,18 @@
-// src/scripts/setupCacheSystem.ts
 import { supabase } from '../services/supabaseClient.js';
 
 async function setupCacheSystem() {
-  console.log('🚀 Setting up Cache System...');
+  console.log('Setting up Cache System...');
   
   try {
-    // Test connection by querying the primary cache table
     const { data, error } = await supabase.from('cache_inteligjent').select('count').limit(1);
     
     if (error) {
-      console.error('❌ Database connection failed:', error.message);
+      console.error('Database connection failed:', error.message);
       return;
     }
 
-    console.log('✅ Database connection successful');
+    console.log('Database connection successful');
     
-    // Insert or update default strategies
     const { error: strategyError } = await supabase
       .from('cache_strategies')
       .upsert([
@@ -32,15 +29,15 @@ async function setupCacheSystem() {
       ], { onConflict: 'strategy_name' });
 
     if (strategyError) {
-      console.error('❌ Cache strategy setup failed:', strategyError.message);
+      console.error('Cache strategy setup failed:', strategyError.message);
     } else {
-      console.log('✅ Cache strategies configured');
+      console.log('Cache strategies configured');
     }
 
-    console.log('🎉 Cache system setup completed!');
+    console.log('Cache system setup completed!');
     
   } catch (error) {
-    console.error('❌ Setup failed:', error);
+    console.error('Setup failed:', error);
   }
 }
 
