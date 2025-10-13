@@ -1,4 +1,3 @@
-// src/utils/performanceMonitor.ts - PERFORMANCE MONITORING
 import { logger } from './logger.js';
 
 export class PerformanceMonitor {
@@ -26,13 +25,12 @@ export class PerformanceMonitor {
         operation,
         duration: `${duration.toFixed(2)}ms`,
         type: 'performance'
-      }, `⏱️ ${operation} completed`);
+      }, `Performance: ${operation}`);
 
       this.measurements.delete(operation);
     }
   }
 
-  // 🚀 Async performance tracking
   async track<T>(operation: string, fn: () => Promise<T>): Promise<T> {
     this.start(operation);
     try {
