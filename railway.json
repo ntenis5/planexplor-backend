@@ -4,8 +4,11 @@
     "buildCommand": "npm install && npm run build"
   },
   "deploy": {
-    "startCommand": "NODE_ENV=production node dist/app.js",
+    "startCommand": "node dist/app.js",
     "healthcheckPath": "/health",
-    "restartPolicyType": "ALWAYS"
+    "restartPolicyType": "ALWAYS",
+    "env": {
+      "NODE_ENV": "production"
+    }
   }
 }
