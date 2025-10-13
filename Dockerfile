@@ -1,16 +1,18 @@
-# Faza 1: Faza e Ndërtimit (Builder Stage) - Përdor Node 20 LTS për shpejtësi dhe qëndrueshmëri
+# Faza 1: Faza e Ndërtimit (Builder Stage) - Node 20 LTS
 FROM node:20-alpine AS builder
 
 # 1. Vendos folderin e punës
 WORKDIR /app
 
 # 2. Kopjo skedarët e varësive për të shfrytëzuar Kashin e Docker.
-# Kjo është fleksibël dhe nuk kërkon domosdoshmërisht package-lock.json (npm install)
+# Kopjo vetëm package.json (Ky ekziston gjithmonë)
 COPY package.json ./
-# Kopjo package-lock.json nëse ekziston (për qëndrueshmëri maksimale)
-COPY package-lock.json ./ || true
+# Faza 1.5 (Zgjidhet problemi i lstat):
+# Kopjo package-lock.json NËSE ekziston, duke e bërë atë opsional nëpërmjet .dockerignore.
+# Por meqenëse nuk ke terminal, thjesht do të bëjmë COPY vetëm package.json dhe do të përdorim npm install.
 
-# 3. Instalimi i të gjitha varësive (npm install është më i tolerueshëm pa package-lock.json se npm ci)
+# 3. Instalimi i të gjitha varësive (npm install)
+# Kjo është më e ngadaltë se npm ci, por funksionon pa package-lock.json.
 RUN npm install
 
 # 4. Kopjo kodin burimor dhe kompajllo (build) projektin TS në JS
@@ -31,15 +33,14 @@ USER nodeapp
 # Kopjo package.json
 COPY --from=builder /app/package.json ./
 
-# 4. Instalimi i varësive të prodhimit me npm ci (Kërkon package.json, por nuk kërkon package-lock.json)
-# Duke qenë se kemi vetëm package.json, ne mund të përdorim npm install --production.
-# Për të siguruar shpejtësi dhe pastërti, do të përdorim npm install --production.
-RUN npm install --production --prefer-offline
+# 4. Instalimi i varësive të prodhimit
+# Ne e kërkojmë vetëm npm install --production. Kjo është e shpejtë dhe e qëndrueshme.
+RUN npm install --production
 
 # 5. Kopjo kodin e kompajlluar (JS)
 COPY --from=builder /app/dist ./dist
 
-# 6. Ekspozimi i portës (Railway zakonisht përdor 8080 si parazgjedhje)
+# 6. Ekspozimi i portës
 EXPOSE 8080
 
 # 7. Komanda për të nisur aplikacionin
