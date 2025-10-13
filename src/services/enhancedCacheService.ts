@@ -1,14 +1,9 @@
-// src/services/enhancedCacheService.ts
-import { logger } from '../utils/logger.js'; // ZGJIDHUR: Importimi i logger-it
-
+import { logger } from '../utils/logger.js';
 import { supabase } from './supabaseClient.js';
 import { scalingService } from './scalingService.js';
 
 export class EnhancedCacheService {
   
-  /**
-   * Retrieves data from the cache using an intelligent strategy.
-   */
   async smartGet(cacheKey: string, endpoint: string, userRegion: string = 'eu') {
     try {
       const strategy = await scalingService.getCacheStrategy(endpoint, userRegion);
@@ -34,15 +29,11 @@ export class EnhancedCacheService {
         strategy 
       };
     } catch (error) {
-      // Zëvendësuar console.error
       logger.error('Error in smartGet:', { error });
       return { status: 'error', data: null, strategy: null };
     }
   }
 
-  /**
-   * Sets data in the cache using an intelligent strategy.
-   */
   async smartSet(cacheKey: string, data: any, endpoint: string, userRegion: string = 'eu') {
     try {
       const strategy = await scalingService.getCacheStrategy(endpoint, userRegion);
@@ -58,7 +49,6 @@ export class EnhancedCacheService {
 
       return { success: !error, strategy };
     } catch (error) {
-      // Zëvendësuar console.error
       logger.error('Error in smartSet:', { error });
       return { success: false, strategy: null };
     }
@@ -71,9 +61,6 @@ export class EnhancedCacheService {
     return 'api';
   }
 
-  /**
-   * Fetches the overall system health, including scaling needs and performance stats.
-   */
   async getSystemHealth() {
     try {
       const [scalingNeeds, performance] = await Promise.all([
@@ -87,7 +74,6 @@ export class EnhancedCacheService {
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      // Zëvendësuar console.error
       logger.error('Error in getSystemHealth:', { error });
       return {
         scaling: {},
@@ -102,7 +88,6 @@ export class EnhancedCacheService {
       const { data, error } = await supabase.rpc('get_cache_stats');
       
       if (error || !data) {
-        // Zëvendësuar console.error
         logger.error('Cache stats error:', { error });
         return {};
       }
@@ -120,7 +105,6 @@ export class EnhancedCacheService {
       return {};
       
     } catch (error) {
-      // Zëvendësuar console.error
       logger.error('Error in getPerformanceStats:', { error });
       return {};
     }
