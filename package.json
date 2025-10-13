@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "nodemon --loader ts-node/esm src/app.ts",
-    "build": "tsc",
-    "start": "node dist/app.js",
+    "dev": "NODE_ENV=development nodemon --loader ts-node/esm src/app.ts",
+    "build": "tsc --project tsconfig.prod.json",
+    "start": "NODE_ENV=production node --max-old-space-size=4096 dist/app.js",
+    "start:optimized": "NODE_ENV=production node --max-old-space-size=4096 --v8-pool-size=4 dist/app.js",
     "migrate": "npx supabase db push",
     "cache:setup": "node --loader ts-node/esm src/scripts/setupCacheSystem.ts",
     "cache:stats": "node --loader ts-node/esm src/scripts/checkCacheStats.ts",
@@ -13,7 +14,7 @@
     "analytics:report": "node --loader ts-node/esm src/scripts/generateAnalyticsReport.ts",
     "deploy:full": "npm run build && npm run migrate && npm run cache:setup",
     "railway:build": "npm install && npm run build",
-    "railway:start": "node dist/app.js"
+    "railway:start": "NODE_ENV=production node dist/app.js"
   },
   "dependencies": {
     "express-async-errors": "^3.1.1",
@@ -32,8 +33,8 @@
     "geoip-lite": "^1.4.7",
     "user-agents": "^1.1.1",
     "pino": "^8.17.3",
-    "pino-http": "^9.0.0"
-    "pino-pretty": "^10.0.0",
+    "pino-http": "^9.0.0",
+    "pino-pretty": "^10.0.0"
   },
   "devDependencies": {
     "typescript": "^5.1.6",
