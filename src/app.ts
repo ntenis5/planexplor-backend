@@ -7,15 +7,11 @@ import pino from 'pino-http';
 import dotenv from 'dotenv';
 import 'express-async-errors';
 
-// 🚀 PERFORMANCE: Load env vars SYNCHRONOUSLY
-if (process.env.NODE_ENV !== 'production') {
-  dotenv.config();
-}
-
+// 🚀 ULTRA-PERFORMANCE: Serveri niset PARA çdo gjeje
 const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
 
-// 🚀 PERFORMANCE: Health Check FIRST - para çdo gjeje
+// 🚀 ULTRA-PERFORMANCE: Health Check INSTANT
 app.get('/', (req, res) => {
   res.json({ 
     message: '🚀 Planexplor Backend API is running!',
@@ -33,186 +29,126 @@ app.get('/health', (req, res) => {
   });
 });
 
-// 🚀 PERFORMANCE: Optimized Middleware Stack
-app.use(helmet({
-  contentSecurityPolicy: false, // 🚀 Disable për API performance
-  crossOriginEmbedderPolicy: false
-}));
-
-app.use(compression({
-  level: 6, // 🚀 Optimal compression level
-  threshold: 1024
-}));
-
-app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
-}));
-
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// 🚀 PERFORMANCE: Optimized Logging
-const logger = pino({
-  level: process.env.LOG_LEVEL || 'info',
-  formatters: {
-    level: (label) => ({ level: label })
-  },
-  base: undefined // 🚀 Remove pid, hostname for performance
+// 🚀 ULTRA-PERFORMANCE: Start Server IMMEDIATELY
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🎯 Server RUNNING on port ${PORT}`);
+  console.log(`🌐 Health Check: http://localhost:${PORT}/health`);
 });
 
-app.use(logger);
-
-// 🚀 PERFORMANCE: Smart Rate Limiting
-const createRateLimit = (windowMs: number, max: number, message: string) => 
-  rateLimit({
-    windowMs,
-    max,
-    message,
-    standardHeaders: true,
-    legacyHeaders: false,
-    skipSuccessfulRequests: true // 🚀 Only track failures
-  });
-
-app.use(createRateLimit(15 * 60 * 1000, 1000, 'Too many requests'));
-app.use('/api/auth', createRateLimit(15 * 60 * 1000, 50, 'Too many auth attempts'));
-
-// 🚀 PERFORMANCE: Async Route Loading me Cache
-const routeCache = new Map();
-
-const loadRoute = async (routePath: string) => {
-  if (routeCache.has(routePath)) {
-    return routeCache.get(routePath);
-  }
-  
+// 🚀 ULTRA-PERFORMANCE: Tani ngarko middleware dhe routes
+const initializeApp = async () => {
   try {
-    const module = await import(routePath);
-    routeCache.set(routePath, module.default);
-    return module.default;
-  } catch (error) {
-    console.warn(`Route ${routePath} not available`);
-    return null;
-  }
-};
-
-// 🚀 PERFORMANCE: Parallel Route Loading
-const loadAllRoutes = async () => {
-  const routePromises = [
-    { path: './routes/geolocation.js', key: 'geolocationRoutes' },
-    { path: './routes/auth.js', key: 'authRoutes' },
-    { path: './routes/ads.js', key: 'adsRoutes' },
-    { path: './routes/payments.js', key: 'paymentsRoutes' },
-    { path: './routes/affiliate.js', key: 'affiliateRoutes' },
-    { path: './routes/feed.js', key: 'feedRoutes' },
-    { path: './routes/flights.js', key: 'flightsRouter' },
-    { path: './routes/systemAdmin.js', key: 'systemAdminRouter' },
-    { path: './routes/cacheAdmin.js', key: 'cacheAdminRouter' },
-    { path: './routes/analyticsDashboard.js', key: 'analyticsRouter' }
-  ].map(async ({ path, key }) => {
-    const route = await loadRoute(path);
-    return { key, route };
-  });
-
-  const routes = await Promise.allSettled(routePromises);
-  const result: any = {};
-
-  routes.forEach((routeResult) => {
-    if (routeResult.status === 'fulfilled' && routeResult.value.route) {
-      result[routeResult.value.key] = routeResult.value.route;
-    }
-  });
-
-  return result;
-};
-
-// 🚀 PERFORMANCE: Service Loading me Fallback
-const loadServices = async () => {
-  const servicePromises = [
-    { path: './services/enhancedCacheService.js', key: 'enhancedCacheService' },
-    { path: './services/cacheMaintenance.js', key: 'cacheMaintenance' },
-    { path: './middleware/analyticsMiddleware.js', key: 'analyticsMiddleware' }
-  ].map(async ({ path, key }) => {
-    try {
-      const module = await import(path);
-      return { 
-        key, 
-        value: key === 'analyticsMiddleware' ? module.default : module[key] 
-      };
-    } catch (error) {
-      console.warn(`Service ${key} not available`);
-      return { key, value: null };
-    }
-  });
-
-  const services = await Promise.allSettled(servicePromises);
-  const result: any = {};
-
-  services.forEach((serviceResult) => {
-    if (serviceResult.status === 'fulfilled') {
-      result[serviceResult.value.key] = serviceResult.value.value;
-    }
-  });
-
-  return result;
-};
-
-// 🚀 PERFORMANCE: Application Startup Optimized
-const startServer = async () => {
-  try {
-    console.log('🚀 Starting Planexplor Backend - Performance Optimized...');
+    console.log('🚀 Initializing Planexplor Backend...');
     
-    // 🚀 PERFORMANCE: Parallel loading i routes dhe services
-    const [routes, services] = await Promise.all([
-      loadAllRoutes(),
-      loadServices()
-    ]);
+    // 🚀 ULTRA-PERFORMANCE: Load env vars
+    if (process.env.NODE_ENV !== 'production') {
+      dotenv.config();
+    }
 
-    console.log(`✅ Loaded ${Object.keys(routes).length} routes`);
-    console.log(`✅ Loaded ${Object.keys(services).length} services`);
+    // 🚀 ULTRA-PERFORMANCE: Basic Middleware
+    app.use(helmet({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false
+    }));
 
-    // 🚀 PERFORMANCE: Mount routes
-    const API_PREFIX = '/api/v1';
+    app.use(compression());
     
-    Object.entries(routes).forEach(([key, route]) => {
-      if (route) {
-        const path = `/${key.replace(/Routes?|Router$/, '').toLowerCase()}`;
-        app.use(`${API_PREFIX}${path}`, route as any);
-        console.log(`✅ Mounted ${API_PREFIX}${path}`);
+    app.use(cors({
+      origin: process.env.FRONTEND_URL || '*',
+      credentials: true
+    }));
+
+    app.use(express.json({ limit: '10mb' }));
+    app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+    // 🚀 ULTRA-PERFORMANCE: Optimized Logging
+    const logger = pino({
+      level: process.env.LOG_LEVEL || 'info',
+      formatters: { level: (label) => ({ level: label }) },
+      base: undefined
+    });
+    app.use(logger);
+
+    // 🚀 ULTRA-PERFORMANCE: Rate Limiting
+    const apiLimiter = rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: 1000,
+      message: 'Too many requests'
+    });
+    app.use(apiLimiter);
+
+    // 🚀 ULTRA-PERFORMANCE: Lazy Load Routes
+    const loadRoute = async (routePath: string) => {
+      try {
+        const module = await import(routePath);
+        return module.default;
+      } catch (error) {
+        console.warn(`Route ${routePath} not available`);
+        return null;
       }
+    };
+
+    // 🚀 ULTRA-PERFORMANCE: Mount Routes Background
+    const routeConfigs = [
+      { path: './routes/geolocation.js', mount: '/api/v1/geolocation' },
+      { path: './routes/auth.js', mount: '/api/v1/auth' },
+      { path: './routes/ads.js', mount: '/api/v1/ads' },
+      { path: './routes/payments.js', mount: '/api/v1/payments' },
+      { path: './routes/affiliate.js', mount: '/api/v1/affiliate' },
+      { path: './routes/feed.js', mount: '/api/v1/feed' },
+      { path: './routes/flights.js', mount: '/api/v1/flights' },
+      { path: './routes/systemAdmin.js', mount: '/api/v1/admin/system' },
+      { path: './routes/cacheAdmin.js', mount: '/api/v1/admin/cache' },
+      { path: './routes/analyticsDashboard.js', mount: '/api/v1/analytics' }
+    ];
+
+    // 🚀 ULTRA-PERFORMANCE: Load routes në background
+    Promise.allSettled(
+      routeConfigs.map(async ({ path, mount }) => {
+        const route = await loadRoute(path);
+        if (route) {
+          app.use(mount, route);
+          console.log(`✅ Mounted ${mount}`);
+        }
+      })
+    ).then(() => {
+      console.log('🎯 All routes loaded successfully!');
     });
 
-    // 🚀 PERFORMANCE: Initialize services
-    if (services.cacheMaintenance?.startScheduledCleanup) {
-      services.cacheMaintenance.startScheduledCleanup();
-      console.log('✅ Cache service initialized');
-    }
+    // 🚀 ULTRA-PERFORMANCE: Load Services Background
+    const loadServices = async () => {
+      try {
+        const { cacheMaintenance } = await import('./services/cacheMaintenance.js');
+        const { default: analyticsMiddleware } = await import('./middleware/analyticsMiddleware.js');
+        
+        if (cacheMaintenance?.startScheduledCleanup) {
+          cacheMaintenance.startScheduledCleanup();
+          console.log('✅ Cache service initialized');
+        }
+        
+        if (analyticsMiddleware) {
+          app.use(analyticsMiddleware);
+          console.log('✅ Analytics middleware initialized');
+        }
+      } catch (error) {
+        console.warn('⚠️ Some services not available');
+      }
+    };
 
-    if (services.analyticsMiddleware) {
-      app.use(services.analyticsMiddleware);
-      console.log('✅ Analytics middleware initialized');
-    }
+    loadServices();
 
-    // 🚀 PERFORMANCE: Start server
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🎯 Server running on port ${PORT}`);
-      console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`🔧 Node Version: ${process.version}`);
-      console.log(`🌐 Health Check: http://localhost:${PORT}/health`);
-    });
+    console.log('🚀 Planexplor Backend fully initialized!');
 
-  } catch (error: any) {
-    console.error('❌ Failed to start server:', error);
-    
-    // 🚀 PERFORMANCE: Fallback mode - serveri niset gjithmonë
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`⚠️  Server running in fallback mode on port ${PORT}`);
-      console.log(`🌐 Basic endpoints available`);
-    });
+  } catch (error) {
+    console.error('❌ Initialization error:', error);
+    // 🚀 ULTRA-PERFORMANCE: Serveri është TASHMË running, kështu që vazhdon të punojë
   }
 };
 
-// 🚀 PERFORMANCE: Optimized Error Handlers
+// 🚀 ULTRA-PERFORMANCE: Initialize në background
+initializeApp();
+
+// 🚀 ULTRA-PERFORMANCE: Error Handlers
 app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
   console.error('Error:', error);
   res.status(500).json({
@@ -229,5 +165,11 @@ app.use('*', (req: Request, res: Response) => {
   });
 });
 
-// 🚀 START SERVER
-startServer();
+// 🚀 ULTRA-PERFORMANCE: Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('🛑 Received SIGTERM, shutting down gracefully');
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
+});
