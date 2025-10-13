@@ -1,14 +1,15 @@
 {
   "build": {
     "builder": "nixpacks",
-    "buildCommand": "npm install && npm run build"
+    "buildCommand": "npm ci --only=production && npm run build"
   },
   "deploy": {
     "startCommand": "node dist/app.js",
     "healthcheckPath": "/health",
     "restartPolicyType": "ALWAYS",
     "env": {
-      "NODE_ENV": "production"
+      "NODE_ENV": "production",
+      "PORT": "8080"
     }
   }
 }
