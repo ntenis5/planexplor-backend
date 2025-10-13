@@ -1,18 +1,13 @@
 import { Router, Request, Response } from 'express';
 import axios from 'axios';
 import { supabase } from '../services/supabaseClient.js'; 
-import { enhancedCacheService } from '../services/enhancedCacheService.js'; // Import the enhanced service
+import { enhancedCacheService } from '../services/enhancedCacheService.js';
 
 const geolocationRouter = Router();
 
-// Define the unique endpoint identifier for adaptive caching logic
 const ENDPOINT_GEO_SEARCH = 'geolocation_search';
 const ENDPOINT_GEO_REVERSE = 'geolocation_reverse';
 
-// ----------------------------------------------------------------------------------
-// ENDPOINT: GET /search
-// Geocoding search with adaptive caching and performance logging.
-// ----------------------------------------------------------------------------------
 geolocationRouter.get('/search', async (req: Request, res: Response) => {
   const { query } = req.query;
 
@@ -25,7 +20,6 @@ geolocationRouter.get('/search', async (req: Request, res: Response) => {
   try {
     const userRegion = req.headers['x-user-region'] as string || 'eu';
 
-    // 1. ATTEMPT SMART CACHE HIT
     const cacheResult = await enhancedCacheService.smartGet(
       cacheKey,
       ENDPOINT_GEO_SEARCH,
@@ -33,9 +27,8 @@ geolocationRouter.get('/search', async (req: Request, res: Response) => {
     );
     
     if (cacheResult.status === 'hit' && cacheResult.data) {
-      console.log('✅ Geolocation serviced from CACHE:', cacheKey);
+      console.log('Geolocation serviced from CACHE:', cacheKey);
       
-      // Log performance hit (using a fixed minimal time for cache access)
       await supabase.rpc('log_performance', {
         endpoint_name: ENDPOINT_GEO_SEARCH,
         response_time: 5, 
@@ -45,8 +38,7 @@ geolocationRouter.get('/search', async (req: Request, res: Response) => {
       return res.json(cacheResult.data);
     }
 
-    // 2. CACHE MISS - EXECUTE API CALL
-    console.log('🔄 Fetching fresh geolocation data:', cacheKey);
+    console.log('Fetching fresh geolocation data:', cacheKey);
     
     const startTime = Date.now();
     const response = await axios.get(
@@ -63,7 +55,6 @@ geolocationRouter.get('/search', async (req: Request, res: Response) => {
     );
     const responseTime = Date.now() - startTime;
 
-    // KORRIGJIM: Detyrimi i tipit në Array<any> për të zgjidhur TS7053
     const results = response.data as Array<any>; 
 
     if (results && results.length > 0) {
@@ -74,7 +65,6 @@ geolocationRouter.get('/search', async (req: Request, res: Response) => {
         boundingbox: results[0].boundingbox
       };
       
-      // 3. STORE IN CACHE using smartSet (TTL is managed by adaptive strategy)
       await enhancedCacheService.smartSet(
         cacheKey,
         result,
@@ -82,7 +72,6 @@ geolocationRouter.get('/search', async (req: Request, res: Response) => {
         userRegion
       ); 
       
-      // Log performance miss
       await supabase.rpc('log_performance', {
         endpoint_name: ENDPOINT_GEO_SEARCH,
         response_time: responseTime,
@@ -101,7 +90,6 @@ geolocationRouter.get('/search', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error in Geocoding Search:', error);
     
-    // Log error performance
     await supabase.rpc('log_performance', {
       endpoint_name: ENDPOINT_GEO_SEARCH,
       response_time: 0,
@@ -112,10 +100,6 @@ geolocationRouter.get('/search', async (req: Request, res: Response) => {
   }
 });
 
-// ----------------------------------------------------------------------------------
-// ENDPOINT: GET /reverse-geocode
-// Reverse Geocoding with adaptive caching and performance logging.
-// ----------------------------------------------------------------------------------
 geolocationRouter.get('/reverse-geocode', async (req: Request, res: Response) => {
   const { lat, lng } = req.query;
 
@@ -128,7 +112,6 @@ geolocationRouter.get('/reverse-geocode', async (req: Request, res: Response) =>
   try {
     const userRegion = req.headers['x-user-region'] as string || 'eu';
 
-    // 1. ATTEMPT SMART CACHE HIT
     const cacheResult = await enhancedCacheService.smartGet(
         cacheKey, 
         ENDPOINT_GEO_REVERSE, 
@@ -136,7 +119,7 @@ geolocationRouter.get('/reverse-geocode', async (req: Request, res: Response) =>
     );
     
     if (cacheResult.status === 'hit' && cacheResult.data) {
-      console.log('✅ Reverse Geocode serviced from CACHE:', cacheKey);
+      console.log('Reverse Geocode serviced from CACHE:', cacheKey);
       
       await supabase.rpc('log_performance', {
         endpoint_name: ENDPOINT_GEO_REVERSE,
@@ -147,8 +130,7 @@ geolocationRouter.get('/reverse-geocode', async (req: Request, res: Response) =>
       return res.json(cacheResult.data);
     }
 
-    // 2. CACHE MISS - API CALL
-    console.log('🔄 Fetching fresh reverse geocode:', cacheKey);
+    console.log('Fetching fresh reverse geocode:', cacheKey);
     const startTime = Date.now();
     
     const response = await axios.get(
@@ -166,7 +148,6 @@ geolocationRouter.get('/reverse-geocode', async (req: Request, res: Response) =>
     );
     
     const responseTime = Date.now() - startTime;
-    // 'data' automatikisht merr llojin e saktë nga Axios në këtë rast (një objekt), por mund ta detyrosh me 'as any' nëse dëshiron më shumë siguri. E lëmë siç është.
     const data = response.data;
     
     const result = { 
@@ -176,7 +157,6 @@ geolocationRouter.get('/reverse-geocode', async (req: Request, res: Response) =>
       details: data.address
     };
 
-    // 3. CACHE RESULT (TTL is managed by adaptive strategy)
     await enhancedCacheService.smartSet(
         cacheKey,
         result,
