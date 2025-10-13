@@ -7,9 +7,6 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
-    // 🚀 PERFEKSION: Kjo rregullon gabimin 'err is unknown' gjatë build-it.
-    // Tani TypeScript lejon trajtimin e gabimeve si 'unknown' në bllokun catch.
-    // Ky është hapi i dytë kryesor pas rregullimit të 'app.ts' në fillim.
     "useUnknownInCatchVariables": false, 
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
