@@ -1,6 +1,5 @@
 import axios from 'axios';
 
-// Interfaces për të dhënat e fluturimeve
 interface FlightSearchParams {
   origin: string;
   destination: string;
@@ -65,8 +64,7 @@ interface Suggestion {
   departureDate?: string;
 }
 
-// Lloji i API Response u ndryshua për të mos shkaktuar probleme me 'unknown'
-type TravelPayoutsResponse = any; 
+type TravelPayoutsResponse = any;
 
 export class TravelPayoutsService {
   private baseUrl: string;
@@ -102,7 +100,7 @@ export class TravelPayoutsService {
         timeout: 15000
       });
 
-      return this.formatFlightResults(response.data as TravelPayoutsResponse);
+      return this.formatFlightResults(response.data);
     } catch (error: any) {
       console.error('TravelPayouts API Error:', error.response?.data || error.message);
       throw new Error('Failed to fetch flights data');
@@ -120,8 +118,7 @@ export class TravelPayoutsService {
         }
       });
       
-      // KORRIGJIM: Detyrimi i tipit në 'any' për të zgjidhur TS18046
-      return this.formatCheapFlights(response.data as TravelPayoutsResponse);
+      return this.formatCheapFlights(response.data);
     } catch (error: any) {
       console.error('TravelPayouts Cheap Flights Error:', error);
       throw error;
@@ -138,8 +135,7 @@ export class TravelPayoutsService {
         }
       });
       
-      // KORRIGJIM: Detyrimi i tipit në 'any' për të zgjidhur TS18046
-      return this.formatSuggestions(response.data as TravelPayoutsResponse);
+      return this.formatSuggestions(response.data);
     } catch (error: any) {
       console.error('TravelPayouts Suggestions Error:', error);
       return [];
@@ -164,7 +160,6 @@ export class TravelPayoutsService {
   private formatFlightResults(data: TravelPayoutsResponse): FlightResult[] {
     if (!data.data) return [];
 
-    // 'data.data' duhet të jetë një varg, e detyrojmë llojin
     return (data.data as FlightData[]).map((flight: FlightData) => ({
       id: flight.id || `${flight.origin}-${flight.destination}-${flight.depart_date}`,
       origin: flight.origin,
@@ -186,7 +181,6 @@ export class TravelPayoutsService {
     if (!data.data) return [];
 
     const flights: CheapFlight[] = [];
-    // Detyrojmë 'data.data' në llojin e saktë (një objekt me çelësa destinacioni)
     Object.entries(data.data as Record<string, any>).forEach(([destination, flightData]: [string, any]) => {
       flights.push({
         destination,
@@ -207,7 +201,6 @@ export class TravelPayoutsService {
     if (!data.data) return [];
 
     const suggestions: Suggestion[] = [];
-    // Detyrojmë 'data.data' në llojin e saktë (një objekt me çelësa destinacioni)
     Object.entries(data.data as Record<string, any>).forEach(([destination, info]: [string, any]) => {
       suggestions.push({
         destination,
