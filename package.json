@@ -33,6 +33,7 @@
     "user-agents": "^1.1.1",
     "pino": "^8.17.3",
     "pino-http": "^9.0.0"
+    "pino-pretty": "^10.0.0",
   },
   "devDependencies": {
     "typescript": "^5.1.6",
