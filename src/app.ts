@@ -49,9 +49,13 @@ const loadServices = async () => {
     const { default: analyticsMiddleware } = await import('./middleware/analyticsMiddleware.js');
 
     return { enhancedCacheService, cacheMaintenance, analyticsMiddleware };
-  } catch (error) {
+  } catch (error: any) {
     console.warn('⚠️  Some services not available:', error.message);
-    return { enhancedCacheService: null, cacheMaintenance: null, analyticsMiddleware: (req, res, next) => next() };
+    return { 
+      enhancedCacheService: null, 
+      cacheMaintenance: null, 
+      analyticsMiddleware: (req: Request, res: Response, next: NextFunction) => next() 
+    };
   }
 };
 
@@ -163,7 +167,7 @@ const startServer = async () => {
       console.log(`🌐 Health Check: http://localhost:${PORT}/health`);
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Failed to start server:', error);
     
     // Provide basic functionality even if some modules fail
@@ -175,7 +179,7 @@ const startServer = async () => {
 };
 
 // Global error handler
-app.use((error: any, req: Request, res: Response, next: NextFunction) => {
+app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
   console.error('Unhandled error:', error);
   res.status(500).json({
     error: 'Internal Server Error',
