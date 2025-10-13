@@ -1,47 +1,50 @@
-# Faza 1: Faza e Ndërtimit (Builder Stage) - Node 20 LTS
+# Faza 1: Faza e Ndërtimit (BUILDER STAGE)
+# Përdor Node 20 LTS për shpejtësi dhe qëndrueshmëri
 FROM node:20-alpine AS builder
 
 # 1. Vendos folderin e punës
 WORKDIR /app
 
-# 2. Kopjo skedarët e varësive për të shfrytëzuar Kashin e Docker.
-# Kopjo vetëm package.json (Ky ekziston gjithmonë)
+# 2. Kopjo skedarët e varësive për të shfrytëzuar Kashin e Docker
 COPY package.json ./
-# Faza 1.5 (Zgjidhet problemi i lstat):
-# Kopjo package-lock.json NËSE ekziston, duke e bërë atë opsional nëpërmjet .dockerignore.
-# Por meqenëse nuk ke terminal, thjesht do të bëjmë COPY vetëm package.json dhe do të përdorim npm install.
 
 # 3. Instalimi i të gjitha varësive (npm install)
-# Kjo është më e ngadaltë se npm ci, por funksionon pa package-lock.json.
+# Përdorim npm install (më i tolerueshëm) pasi package-lock.json nuk gjenerohet në telefon.
 RUN npm install
 
-# 4. Kopjo kodin burimor dhe kompajllo (build) projektin TS në JS
+# 4. Kopjo kodin burimor dhe kompajllo (build) projektin
 COPY . .
 RUN npm run build
 
-# Faza 2: Faza e Prodhimit (Production Stage) - Imazh i Vogël dhe i Sigurt
+# Faza 2: Faza e Prodhimit (PRODUCTION STAGE)
+# Përdor Node 20 LTS (më i vogël dhe më i sigurt)
 FROM node:20-alpine AS runner
 
 # 1. Vendos folderin e punës
 WORKDIR /app
 
-# 2. Konfigurim i Sigurisë: Krijo një përdorues jo-root
+# 2. Konfigurimi i Sigurisë: Krijo një përdorues jo-root
 RUN addgroup -g 1001 -S nodejs && adduser -S nodeapp -u 1001 -G nodejs
+
+# 3. I japim pronësinë e folderit `/app` përdoruesit të ri!
+# ZGJIDHJA KRITIKE PËR GABIMIN EACCES
+RUN chown -R nodeapp:nodejs /app
+
+# 4. Ndërrimi te përdoruesi jo-root
 USER nodeapp
 
-# 3. Kopjo vetëm skedarët e prodhimit
-# Kopjo package.json
+# 5. Kopjo vetëm skedarët e prodhimit
 COPY --from=builder /app/package.json ./
 
-# 4. Instalimi i varësive të prodhimit
-# Ne e kërkojmë vetëm npm install --production. Kjo është e shpejtë dhe e qëndrueshme.
+# 6. Instalimi i varësive të prodhimit
+# Tani që jemi si 'nodeapp', ky instalim do të shkruajë në /app/node_modules pa gabime lejesh.
 RUN npm install --production
 
-# 5. Kopjo kodin e kompajlluar (JS)
+# 7. Kopjo kodin e kompajlluar (JS)
 COPY --from=builder /app/dist ./dist
 
-# 6. Ekspozimi i portës
+# 8. Ekspozimi i portës
 EXPOSE 8080
 
-# 7. Komanda për të nisur aplikacionin
+# 9. Komanda për të nisur aplikacionin
 CMD ["node", "dist/app.js"]
