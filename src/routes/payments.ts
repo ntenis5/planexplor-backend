@@ -62,7 +62,7 @@ paymentsRouter.post('/create-intent', async (req: Request<{}, {}, CreateIntentBo
 
     let amount = 0;
     let views_count = 0;
-    const PRICE_PER_VIEW = 50; 
+    const PRICE_PER_VIEW = 50;
 
     if (package_type === 'mini') {
       amount = 2000;
@@ -79,22 +79,26 @@ paymentsRouter.post('/create-intent', async (req: Request<{}, {}, CreateIntentBo
     
     let customerId: string;
 
-    const { data: existingCustomer } = await supabase
-      .from('payments')
+    const { data: existingProfile } = await supabase
+      .from('profiles')
       .select('stripe_customer_id')
-      .eq('user_id', user.id)
-      .not('stripe_customer_id', 'is', null)
+      .eq('id', user.id)
       .limit(1)
       .single();
 
-    if (existingCustomer?.stripe_customer_id) {
-      customerId = existingCustomer.stripe_customer_id;
+    if (existingProfile?.stripe_customer_id) {
+      customerId = existingProfile.stripe_customer_id;
     } else {
       const customer = await stripe.customers.create({
         email: user.email,
         metadata: { user_id: user.id }
       });
       customerId = customer.id;
+      
+      await supabase
+        .from('profiles')
+        .update({ stripe_customer_id: customerId })
+        .eq('id', user.id);
     }
 
     const paymentIntent = await stripe.paymentIntents.create({
