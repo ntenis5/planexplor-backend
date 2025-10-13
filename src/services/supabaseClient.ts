@@ -1,12 +1,8 @@
-// src/services/supabaseClient.ts
-
 import { createClient } from '@supabase/supabase-js';
 
-// Përdor SERVICE KEY (vendosur si variabla mjedisi në Railway)
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 
-// ✅ Kontroll që variablat ekzistojnë
 if (
   typeof supabaseUrl !== 'string' ||
   !supabaseUrl ||
@@ -17,14 +13,11 @@ if (
   if (!supabaseUrl || typeof supabaseUrl !== 'string') missingVars.push('SUPABASE_URL');
   if (!supabaseServiceKey || typeof supabaseServiceKey !== 'string') missingVars.push('SUPABASE_SERVICE_KEY');
 
-  const errorMessage = `❌ Gabim Fatal: Variablat e Supabase mungojnë: ${missingVars.join(', ')}.
-  Sigurohuni që ato janë vendosur si variabla mjedisi në Railway (Environment Variables).`;
-
+  const errorMessage = `Missing Supabase environment variables: ${missingVars.join(', ')}`;
   console.error(errorMessage);
   throw new Error(errorMessage);
 }
 
-// ✅ Inicializimi i klientit të Supabase
 export const supabase = createClient(supabaseUrl!, supabaseServiceKey!, {
   auth: {
     autoRefreshToken: false,
@@ -33,11 +26,8 @@ export const supabase = createClient(supabaseUrl!, supabaseServiceKey!, {
   },
 });
 
-console.log('🔗 Supabase Client u inicializua me sukses duke përdorur Service Key.');
+console.log('Supabase Client initialized successfully');
 
-// ----------------------------------------------------------
-// Definicionet e tipeve të databazës (opsionale për TS)
-// ----------------------------------------------------------
 export interface UserProfile {
   id: string;
   username: string;
