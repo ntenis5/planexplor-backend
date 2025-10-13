@@ -7,7 +7,7 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
-    "useUnknownInCatchVariables": false, 
+    "useUnknownInCatchVariables": false,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
@@ -17,7 +17,7 @@
     "incremental": false,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "types": ["node"],
+    "types": ["node"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]
