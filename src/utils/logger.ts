@@ -1,13 +1,15 @@
-// src/utils/logger.ts - PERFORMANCE OPTIMIZED
+// src/utils/logger.ts - PRODUCTION PERFORMANCE
 import pino from 'pino';
 
-// Cache environment variables për performance
-const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
-const isDevelopment = process.env.NODE_ENV === 'development';
+// Environment-based configuration
+const isProduction = process.env.NODE_ENV === 'production';
+const LOG_LEVEL = process.env.LOG_LEVEL || (isProduction ? 'warn' : 'info');
 
-// Krijo transport configuration me lazy loading
-const getTransportConfig = () => {
-  if (!isDevelopment) return undefined;
+// Production-optimized transport
+const getTransport = () => {
+  if (isProduction) {
+    return undefined; // JSON format në production për performance
+  }
   
   return {
     target: 'pino-pretty',
@@ -15,41 +17,32 @@ const getTransportConfig = () => {
       colorize: true,
       ignore: 'pid,hostname',
       translateTime: 'HH:MM:ss',
-      singleLine: true, // 🚀 Performance optimization
-      sync: false,      // 🚀 Async logging për performance
+      singleLine: true,
     }
   };
 };
 
-// Krijo logger instance me optimized configuration
-const pinoLogger = pino({
+// High-performance logger configuration
+export const logger = pino({
   level: LOG_LEVEL,
-  transport: getTransportConfig(),
+  transport: getTransport(),
   formatters: {
-    level: (label) => ({ level: label }), // 🚀 Structured logging
+    level: (label) => ({ level: label }),
   },
   serializers: {
-    err: pino.stdSerializers.err,        // 🚀 Optimized error serialization
-    req: pino.stdSerializers.req,        // 🚀 Optimized request serialization
-    res: pino.stdSerializers.res,        // 🚀 Optimized response serialization
+    err: pino.stdSerializers.err,
+    req: pino.stdSerializers.req,
+    res: pino.stdSerializers.res,
   },
-  timestamp: () => `,"time":"${new Date().toISOString()}"`, // 🚀 Fast timestamp
-  base: undefined, // 🚀 Remove pid, hostname për performance
+  timestamp: pino.stdTimeFunctions.isoTime,
+  base: undefined, // Remove unnecessary fields
+  enabled: true,
 });
 
-// Eksporto logger të optimizuar
-export const logger = pinoLogger;
-
-// 🚀 Child logger factory për performance
+// Performance-optimized child logger
 export const createChildLogger = (module: string) => {
-  return pinoLogger.child({ module });
+  return logger.child({ 
+    module,
+    pid: process.pid 
+  });
 };
-
-// 🚀 Performance monitoring middleware
-export const performanceLogger = pino({
-  level: 'info',
-  name: 'performance',
-  formatters: {
-    level: (label) => ({ level: label })
-  }
-});
