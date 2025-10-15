@@ -11,13 +11,16 @@ async function runCacheCleanup(): Promise<void> {
   console.log('Running Smart Cache Cleanup...');
   
   try {
-    const { data: rawData, error } = await supabase.rpc('smart_cache_cleanup');
+    // RREGULLIMI KRYESOR: Shto një argument bosh {}
+    const { data: rawData, error } = await supabase.rpc('smart_cache_cleanup', {}); 
     
     if (error) {
-      console.error('Cleanup failed:', error.message);
+      // Në vend të error.message, shtojmë edhe detajet për të ndihmuar diagnostikimin
+      console.error('Cleanup failed:', error); 
       return;
     }
 
+    // Pjesa tjetër e kodit mbetet e njëjtë
     const data: CleanupResult = Array.isArray(rawData) ? rawData[0] : rawData;
 
     if (!data || typeof data.total_deleted === 'undefined') {
@@ -36,4 +39,8 @@ async function runCacheCleanup(): Promise<void> {
   }
 }
 
-runCacheCleanup();
+// RUANI KËTË KOD JASHTË APP.TS
+// Kujdes: Kjo thirrje duhet të zhvendoset brenda një shërbimi (p.sh., cacheService.cleanupCache())
+// dhe të thirret nga cacheMaintenance.js, jo në nivelin e lartë.
+// Nëse e përdorni si skript, ajo ekzekutohet dhe mbyllet menjëherë!
+// runCacheCleanup();
