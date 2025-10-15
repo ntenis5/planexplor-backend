@@ -13,6 +13,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 8080;
+let server: any; // Deklaro serverin përpara që të jetë i aksesueshëm nga SIGTERM
 
 app.use(helmet());
 app.use(cors());
@@ -24,8 +25,9 @@ const logger = pino({
   }
 });
 app.use(logger);
-
 app.use(express.json());
+
+// Të gjitha rrugët e shëndetit dhe bazë duhet të jenë këtu
 
 app.get('/', (req, res) => {
   res.status(200).json({ 
@@ -48,18 +50,12 @@ app.get('/health', (req, res) => {
   });
 });
 
-console.log(`🚀 Starting server on port ${PORT}...`);
-const server = app.listen(PORT, '0.0.0.0', () => { 
-  console.log(`🎯 SERVER RUNNING on port ${PORT}`);
-  console.log(`🌐 Health: http://0.0.0.0:${PORT}/health`);
-  console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`📍 Railway PORT: ${process.env.PORT}`);
-});
-
-setImmediate(async () => {
+// FUNKSIONI KRYESOR I NISJES
+async function startServer() {
   try {
-    console.log('🚀 Loading additional features...');
-    
+    console.log(`🚀 Starting server configuration...`);
+
+    // --- LOGJIKA E KONFIGURIMIT ---
     app.use(compression());
     
     const apiLimiter = rateLimit({
@@ -68,9 +64,9 @@ setImmediate(async () => {
       message: 'Too many requests'
     });
     app.use(apiLimiter);
-    
     app.use(express.urlencoded({ extended: true, limit: '10mb' }));
     
+    // --- MONTIMI I RRUGËVE ---
     const routes = [
       { path: './routes/geolocation.js', mount: '/api/v1/geolocation' },
       { path: './routes/auth.js', mount: '/api/v1/auth' },
@@ -99,6 +95,7 @@ setImmediate(async () => {
     
     console.log(`🎯 Loaded ${loadedRoutes}/${routes.length} routes successfully!`);
     
+    // --- INICIALIZIMI I SHËRBIMEVE TË VONUARA ---
     try {
       const { cacheMaintenance } = await import('./services/cacheMaintenance.js');
       const { default: analyticsMiddleware } = await import('./middleware/analyticsMiddleware.js');
@@ -116,14 +113,28 @@ setImmediate(async () => {
       console.warn(`⚠️ Some services not available: ${error.message}`);
     }
     
-    console.log('🚀 Planexplor Backend fully operational!');
+    // ZHVENDOSJE E RËNDËSISHME: NISJA E SERVERIT TANI PAS KONFIGURIMIT
+    server = app.listen(PORT, '0.0.0.0', () => { 
+        console.log(`🎯 SERVER RUNNING on port ${PORT}`);
+        console.log(`🌐 Health: http://0.0.0.0:${PORT}/health`);
+        console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+        console.log(`📍 Railway PORT: ${process.env.PORT}`);
+        console.log('🚀 Planexplor Backend fully operational!');
+    });
     
   } catch (error: any) {
     console.error('❌ Feature loading error:', error.message);
+    process.exit(1); // Mbyll serverin nëse konfigurimi dështon
   }
-});
+}
+
+// Thirrja e funksionit të nisjes së serverit
+startServer();
+
+// --- MENAXHIMI I GABIMEVE DHE NDALIMI (ERRORS & SHUTDOWN) ---
 
 app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
+  // ... (Kodi i menaxhimit të gabimit siç ishte) ...
   let errorMessage = 'Internal Server Error';
   if (error instanceof Error) {
     errorMessage = error.message;
@@ -148,8 +159,12 @@ app.use('*', (req: Request, res: Response) => {
 
 process.on('SIGTERM', () => {
   console.log('🛑 Received SIGTERM, shutting down gracefully...');
-  server.close(() => {
-    console.log('✅ Server closed');
+  if (server) {
+    server.close(() => {
+        console.log('✅ Server closed');
+        process.exit(0);
+    });
+  } else {
     process.exit(0);
-  });
+  }
 });
