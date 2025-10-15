@@ -43,7 +43,7 @@ app.get('/health', (req, res) => {
     service: 'planexplor-backend',
     timestamp: Date.now(),
     uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development',
+    environment: process.env.NODE_ENV,
     port: PORT
   });
 });
@@ -90,33 +90,44 @@ async function startServer() {
     
     console.log(`🎯 Loaded ${loadedRoutes}/${routes.length} routes successfully!`);
     
-    try {
-      const { cacheMaintenance } = await import('./services/cacheMaintenance.js');
-      const { default: analyticsMiddleware } = await import('./middleware/analyticsMiddleware.js');
-      
-      if (cacheMaintenance?.startScheduledCleanup) {
-        cacheMaintenance.startScheduledCleanup();
-        console.log('✅ Cache service initialized');
-      }
-      
-      if (analyticsMiddleware) {
-        app.use(analyticsMiddleware);
-        console.log('✅ Analytics middleware initialized');
-      }
-    } catch (error: any) {
-      console.warn(`⚠️ Some services not available: ${error.message}`);
-    }
+    // NUK KA MË INICIALIZIM SHËRBIMESH KËTU! I gjithë kodi që dështon
+    // DHE NUK E MBYLL SERVERIN LËVIZ POSHTË.
     
+    // HAPI 1: NIS SERVERIN. Kjo garanton që aplikacioni po dëgjon.
     server = app.listen(PORT, '0.0.0.0', () => { 
         console.log(`🎯 SERVER RUNNING on port ${PORT}`);
         console.log(`🌐 Health: http://0.0.0.0:${PORT}/health`);
         console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
         console.log(`📍 Railway PORT: ${process.env.PORT}`);
-        console.log('🚀 Planexplor Backend fully operational!');
+        console.log('🚀 Planexplor Backend fully operational!'); // Log i suksesit
     });
+
+    // HAPI 2: INICIALIZONI SHËRBIMET JOKRITIKE (Cache, Analytics) PAS NISJES
+    // Vendoset në një bllok try/catch të veçantë që nuk përdor process.exit(1)
+    try {
+      const { cacheMaintenance } = await import('./services/cacheMaintenance.js');
+      const { default: analyticsMiddleware } = await import('./middleware/analyticsMiddleware.js');
+      
+      // Inicializo Cache Maintenance (Kjo dështon dhe shkakton mbylljen)
+      if (cacheMaintenance?.startScheduledCleanup) {
+        cacheMaintenance.startScheduledCleanup();
+        console.log('✅ Cache service initialized (Scheduled Cleanup Started)');
+      }
+      
+      // Inicializo Analytics Middleware (jo-kritik)
+      if (analyticsMiddleware) {
+        app.use(analyticsMiddleware);
+        console.log('✅ Analytics middleware initialized (post-listen)');
+      }
+    } catch (error: any) {
+      // ❌ Kjo thjesht LOGON gabimin, por serveri mbetet aktiv!
+      console.error(`❌ Non-critical service initialization FAILED: ${error.message}`);
+    }
     
   } catch (error: any) {
-    console.error('❌ Feature loading error:', error.message);
+    // 3. GABIMI KRITIK: Ky bllok kap VETËM gabimet që e ndalojnë serverin të nisë
+    // (p.sh., dështimi i ngarkimit të moduleve kryesore, porti i zënë).
+    console.error('❌ CRITICAL server startup error:', error.message);
     process.exit(1);
   }
 }
@@ -157,3 +168,4 @@ process.on('SIGTERM', () => {
     process.exit(0);
   }
 });
+         
