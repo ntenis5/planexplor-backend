@@ -7,10 +7,10 @@ export class CacheMaintenance {
   startScheduledCleanup() {
     logger.info('Starting scheduled cache cleanup interval...');
     
-    // Thërret pastrimin fillestar asinkronisht pa bllokuar
+    // Thërret pastrimin fillestar asinkronisht pa bllokuar funksionin startServer
     this.runInitialCleanup(); 
 
-    // Konfiguron intervalin e pastrimit të rregullt
+    // Konfiguron intervalin e pastrimit të rregullt (çdo 6 orë)
     this.cleanupInterval = setInterval(async () => {
       try {
         logger.info('Running scheduled cache cleanup...'); 
@@ -22,13 +22,13 @@ export class CacheMaintenance {
     }, 6 * 60 * 60 * 1000); 
   }
 
-  // FUNKSIONI I RREGULLUAR PËR PASTUESHËM DHE STABILITET MË TË MIRË TË NISJES
+  // Funksioni i rregulluar për nisje të qëndrueshme
   private async runInitialCleanup() {
       // Shtohet një pritje e shkurtër për të siguruar që serveri ka nisur plotësisht dëgjimin
       await new Promise(resolve => setTimeout(resolve, 50)); 
       
       try {
-          // Përdor console.log për logimin e nisjes (më i sigurt se logger.info në fazat e hershme)
+          // Përdor console.log për logimin e nisjes (më i sigurt në fazat e hershme)
           console.log('INFO: Running initial cache cleanup...'); 
           
           const result = await cacheService.cleanupCache(); 
@@ -36,7 +36,7 @@ export class CacheMaintenance {
           // Përdor console.log për konfirmim
           console.log('INFO: Initial cache cleanup completed:', { result });
           
-          // E rëndësishme: ASGJË NUK DUHET TË MBYLLË PROCESIN KËTU (process.exit, SIGTERM)
+          // 🛑 VINI RE: Këtu nuk ka asnjë thirrje për mbylljen e procesit (process.exit ose SIGTERM).
           
       } catch (error) {
           // Përdor console.error për gabimet kritike të nisjes
