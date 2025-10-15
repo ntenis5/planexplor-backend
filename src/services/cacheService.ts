@@ -91,6 +91,8 @@ export class CacheService {
   }
 
   async getCacheStats(): Promise<any> {
+    // Shënim: Ju kërkohet të thërrisni get_cache_stats (në logje shfaqet get_cache_stats).
+    // Kjo thirrje duket se funksionon pa problem.
     const { data, error } = await supabase
       .rpc('get_cache_stats');
 
@@ -103,8 +105,11 @@ export class CacheService {
   }
 
   async cleanupCache(): Promise<any> {
+    // RREGULLIMI KRYESOR: Shtojmë një objekt bosh {} si argument.
+    // Kjo zgjidh gabimin 'PGRST202' që ndodh kur funksioni i databazës 
+    // pritet të pranojë një argument JSON/JSONB (edhe pse mund të jetë bosh).
     const { data, error } = await supabase
-      .rpc('smart_cache_cleanup');
+      .rpc('smart_cache_cleanup', {}); // RREGULLUAR KËTU
 
     if (error) {
       console.error('Cache cleanup error:', error);
