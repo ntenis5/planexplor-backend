@@ -1,33 +1,16 @@
+import { logger } from '../utils/logger.js';
 import { supabase } from './supabaseClient.js';
-
-// --- MOCK UP SHËRBIMET QË MUNGUESE PËR KOMPILIM ---
-
-// Duhet të keni një shërbim logger real
-const logger = {
-    error: (message, context) => console.error(`[LOGGER ERROR] ${message}`, context),
-    info: (message, context) => console.log(`[LOGGER INFO] ${message}`, context),
-};
-
-// Duhet të keni një scalingService real
-const scalingService = {
-    getCacheStrategy: async (endpoint, userRegion) => ({ ttl_minutes: 60, region: userRegion }),
-    validateCacheAccess: async (key, roles) => true,
-    checkScalingNeeds: async () => ({ status: 'optimal' }),
-};
-
-// --- KLASA KRYESORE ---
+import { scalingService } from './scalingService.js';
 
 export class EnhancedCacheService {
   
-  // Marrja e të dhënave nga cache-i
-  async smartGet(cacheKey, endpoint, userRegion = 'eu') {
+  async smartGet(cacheKey: string, endpoint: string, userRegion: string = 'eu') {
     try {
-      // Shërbyesit `scalingService` përcaktojnë strategjinë dhe aksesin
       const strategy = await scalingService.getCacheStrategy(endpoint, userRegion);
       const isValid = await scalingService.validateCacheAccess(cacheKey, ['authenticated']);
       
       if (!isValid) {
-        return { status: 'invalid_access', data: null, strategy };
+        return { status: 'invalid_access', data: null };
       }
 
       const { data, error } = await supabase
@@ -40,7 +23,6 @@ export class EnhancedCacheService {
         return { status: 'miss', data: null, strategy }; 
       }
 
-      // Supozohet që `data.data` përmban objektin e ruajtur
       return { 
         status: 'hit', 
         data: data.data,
@@ -52,8 +34,7 @@ export class EnhancedCacheService {
     }
   }
 
-  // Ruajtja e të dhënave në cache
-  async smartSet(cacheKey, data, endpoint, userRegion = 'eu') {
+  async smartSet(cacheKey: string, data: any, endpoint: string, userRegion: string = 'eu') {
     try {
       const strategy = await scalingService.getCacheStrategy(endpoint, userRegion);
       
@@ -66,10 +47,6 @@ export class EnhancedCacheService {
           ttl_minutes: strategy.ttl_minutes 
         });
 
-      if (error) {
-          logger.error('Error in smartSet RPC:', { error });
-      }
-
       return { success: !error, strategy };
     } catch (error) {
       logger.error('Error in smartSet:', { error });
@@ -77,7 +54,7 @@ export class EnhancedCacheService {
     }
   }
 
-  private getCacheType(endpoint) {
+  private getCacheType(endpoint: string): string {
     if (endpoint.includes('geolocation')) return 'geo';
     if (endpoint.includes('affiliate')) return 'affiliate';
     if (endpoint.includes('maps')) return 'map';
@@ -115,7 +92,7 @@ export class EnhancedCacheService {
         return {};
       }
 
-      const statsData = data;
+      const statsData = data as any;
       
       if (Array.isArray(statsData) && statsData.length > 0) {
         return statsData[0];
@@ -135,4 +112,3 @@ export class EnhancedCacheService {
 }
 
 export const enhancedCacheService = new EnhancedCacheService();
-      
