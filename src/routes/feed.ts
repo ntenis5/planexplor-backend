@@ -77,7 +77,7 @@ feedRouter.get('/feed-posts', async (req: Request, res: Response) => {
             'global'
         );
         
-        console.log(`Feed saved to Cache. Strategy: ${setResponse.strategy?.strategy || 'default'}, TTL: ${setResponse.strategy?.ttl_minutes || CACHE_TTL_MINUTES} mins.`);
+        console.log(`Feed saved to Cache. Strategy: ${setResponse.strategy?.region || 'default'}, TTL: ${setResponse.strategy?.ttl_minutes || CACHE_TTL_MINUTES} mins.`);
         
         return res.json(feedPosts.slice(0, limit));
 
