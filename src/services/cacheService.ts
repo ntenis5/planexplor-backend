@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient.js';
+// Kujdes: Sigurohuni që të importoni 'logger' nëse ky skedar është përditësuar për ta përdorur atë.
 
 export class CacheService {
   private static instance: CacheService;
@@ -91,8 +92,6 @@ export class CacheService {
   }
 
   async getCacheStats(): Promise<any> {
-    // Shënim: Ju kërkohet të thërrisni get_cache_stats (në logje shfaqet get_cache_stats).
-    // Kjo thirrje duket se funksionon pa problem.
     const { data, error } = await supabase
       .rpc('get_cache_stats');
 
@@ -105,11 +104,9 @@ export class CacheService {
   }
 
   async cleanupCache(): Promise<any> {
-    // RREGULLIMI KRYESOR: Shtojmë një objekt bosh {} si argument.
-    // Kjo zgjidh gabimin 'PGRST202' që ndodh kur funksioni i databazës 
-    // pritet të pranojë një argument JSON/JSONB (edhe pse mund të jetë bosh).
+    // Rregulluar: Shtohet objekti bosh {} si argument për të zgjidhur gabimin PGRST202
     const { data, error } = await supabase
-      .rpc('smart_cache_cleanup', {}); // RREGULLUAR KËTU
+      .rpc('smart_cache_cleanup', {}); 
 
     if (error) {
       console.error('Cache cleanup error:', error);
