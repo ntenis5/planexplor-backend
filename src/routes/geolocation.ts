@@ -5,15 +5,18 @@ import { enhancedCacheService } from '../services/enhancedCacheService.js';
 
 const geolocationRouter = Router();
 
+// Endpoint Names for logging in Supabase
 const ENDPOINT_GEO_SEARCH = 'geolocation_search';
 const ENDPOINT_GEO_REVERSE = 'geolocation_reverse';
 
+// Environment Variables
 const NOMINATIM_REVERSE_URL = process.env.NOMINATIM_REVERSE_URL; 
 const NOMINATIM_SEARCH_URL = process.env.NOMINATIM_SEARCH_URL;
 
 const MAPBOX_REVERSE_URL = process.env.MAPBOX_API_BASE_URL;
 const MAPBOX_SECRET_KEY = process.env.MAPBOX_SECRET_KEY;
 
+// Forward Geocoding (Address to Lat/Lng)
 geolocationRouter.get('/search', async (req: Request, res: Response) => {
   const { query } = req.query;
 
@@ -22,7 +25,8 @@ geolocationRouter.get('/search', async (req: Request, res: Response) => {
   }
 
   if (!NOMINATIM_SEARCH_URL) {
-      return res.status(500).json({ error: 'NOMINATIM_SEARCH_URL is not configured.' });
+      // In production, log this error instead of exposing env var names
+      return res.status(500).json({ error: 'Search URL is not configured.' });
   }
 
   const cacheKey = `geo_search:${query.toLowerCase().trim()}`;
@@ -30,6 +34,7 @@ geolocationRouter.get('/search', async (req: Request, res: Response) => {
   try {
     const userRegion = req.headers['x-user-region'] as string || 'eu';
 
+    // Cache Check
     const cacheResult = await enhancedCacheService.smartGet(
       cacheKey,
       ENDPOINT_GEO_SEARCH,
@@ -39,13 +44,14 @@ geolocationRouter.get('/search', async (req: Request, res: Response) => {
     if (cacheResult.status === 'hit' && cacheResult.data) {
       await supabase.rpc('log_performance', {
         endpoint_name: ENDPOINT_GEO_SEARCH,
-        response_time: 5, 
+        response_time: 5, // Simulated low time for cache hit
         cache_status: 'hit'
       });
       
       return res.json(cacheResult.data);
     }
 
+    // External API Call (Nominatim/OSM)
     const startTime = Date.now();
     const response = await axios.get(
       NOMINATIM_SEARCH_URL, 
@@ -71,6 +77,7 @@ geolocationRouter.get('/search', async (req: Request, res: Response) => {
         boundingbox: results[0].boundingbox
       };
       
+      // Set Cache
       await enhancedCacheService.smartSet(
         cacheKey,
         result,
@@ -78,6 +85,7 @@ geolocationRouter.get('/search', async (req: Request, res: Response) => {
         userRegion
       ); 
       
+      // Log Performance
       await supabase.rpc('log_performance', {
         endpoint_name: ENDPOINT_GEO_SEARCH,
         response_time: responseTime,
@@ -94,6 +102,7 @@ geolocationRouter.get('/search', async (req: Request, res: Response) => {
     }
 
   } catch (error) {
+    // Log Error/Skip
     await supabase.rpc('log_performance', {
       endpoint_name: ENDPOINT_GEO_SEARCH,
       response_time: 0,
@@ -105,6 +114,7 @@ geolocationRouter.get('/search', async (req: Request, res: Response) => {
 });
 
 
+// Reverse Geocoding (Lat/Lng to Address)
 geolocationRouter.get('/reverse-geocode', async (req: Request, res: Response) => {
   const { lat, lng, provider } = req.query; 
 
@@ -118,6 +128,7 @@ geolocationRouter.get('/reverse-geocode', async (req: Request, res: Response) =>
   try {
     const userRegion = req.headers['x-user-region'] as string || 'eu';
 
+    // Cache Check
     const cacheResult = await enhancedCacheService.smartGet(
         cacheKey, 
         ENDPOINT_GEO_REVERSE, 
@@ -137,6 +148,7 @@ geolocationRouter.get('/reverse-geocode', async (req: Request, res: Response) =>
     let apiUrl: string | undefined;
     let params: any;
 
+    // Determine Provider API Configuration
     if (providerName === 'mapbox') {
       if (!MAPBOX_REVERSE_URL || !MAPBOX_SECRET_KEY) {
           throw new Error("Mapbox API keys are not configured.");
@@ -145,7 +157,7 @@ geolocationRouter.get('/reverse-geocode', async (req: Request, res: Response) =>
       params = {
         access_token: MAPBOX_SECRET_KEY,
       };
-    } else { 
+    } else { // OSM (Default)
       if (!NOMINATIM_REVERSE_URL) {
           return res.status(500).json({ error: 'NOMINATIM_REVERSE_URL is not configured.' });
       }
@@ -159,10 +171,9 @@ geolocationRouter.get('/reverse-geocode', async (req: Request, res: Response) =>
       };
     }
 
+    // External API Call
     const startTime = Date.now();
-    
     const response = await axios.get(apiUrl, { params: params, timeout: 10000 });
-    
     const responseTime = Date.now() - startTime;
     const data = response.data;
     
@@ -181,6 +192,7 @@ geolocationRouter.get('/reverse-geocode', async (req: Request, res: Response) =>
       details: data.address || null
     };
 
+    // Set Cache
     await enhancedCacheService.smartSet(
         cacheKey,
         result,
@@ -188,6 +200,7 @@ geolocationRouter.get('/reverse-geocode', async (req: Request, res: Response) =>
         userRegion
     );
     
+    // Log Performance
     await supabase.rpc('log_performance', {
       endpoint_name: ENDPOINT_GEO_REVERSE,
       response_time: responseTime,
@@ -197,6 +210,7 @@ geolocationRouter.get('/reverse-geocode', async (req: Request, res: Response) =>
     return res.json(result);
 
   } catch (error) {
+    // Log Error/Skip
     await supabase.rpc('log_performance', {
       endpoint_name: ENDPOINT_GEO_REVERSE,
       response_time: 0,
@@ -208,3 +222,4 @@ geolocationRouter.get('/reverse-geocode', async (req: Request, res: Response) =>
 });
 
 export default geolocationRouter;
+  
