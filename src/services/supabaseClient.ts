@@ -1,6 +1,7 @@
-import { createClient } from '@supabase/supabase-js;
+import { createClient } from '@supabase/supabase-js';
+
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 
 if (
   typeof supabaseUrl !== 'string' ||
@@ -10,11 +11,10 @@ if (
 ) {
   const missingVars: string[] = [];
   if (!supabaseUrl || typeof supabaseUrl !== 'string') missingVars.push('SUPABASE_URL');
-  if (!supabaseServiceKey || typeof supabaseServiceKey !== 'string') missingVars.push('SUPABASE_SERVICE_ROLE_KEY');
+  if (!supabaseServiceKey || typeof supabaseServiceKey !== 'string') missingVars.push('SUPABASE_SERVICE_KEY');
 
-  const errorMessage = `Missing Supabase environment variables: ${missingVars.join(', ')}. Check Railway Vars.`;
+  const errorMessage = `Missing Supabase environment variables: ${missingVars.join(', ')}`;
   console.error(errorMessage);
-  
   throw new Error(errorMessage);
 }
 
