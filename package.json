@@ -3,19 +3,12 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "NODE_ENV=development nodemon --loader ts-node/esm --exec ts-node --transpile-only src/app.ts",
+    "dev": "NODE_ENV=development nodemon --loader ts-node/esm src/app.ts",
     "build": "tsc --project tsconfig.prod.json",
-    "start": "NODE_ENV=production node --max-old-space-size=8192 --v8-pool-size=8 --max-semi-space-size=512 dist/app.js",
-    "start:cluster": "NODE_ENV=production node --max-old-space-size=8192 --v8-pool-size=8 -r ts-node/register src/cluster.js",
+    "start": "NODE_ENV=production node --max-old-space-size=4096 --v8-pool-size=4 dist/app.js",
     "migrate": "npx supabase db push",
     "cache:setup": "NODE_ENV=production node dist/scripts/setupCacheSystem.js",
-    "cache:stats": "NODE_ENV=production node dist/scripts/checkCacheStats.js",
-    "cache:cleanup": "NODE_ENV=production node dist/scripts/runCacheCleanup.js",
-    "analytics:report": "NODE_ENV=production node dist/scripts/generateAnalyticsReport.js",
-    "deploy:full": "npm run build && npm run migrate && npm run cache:setup",
-    "railway:build": "npm ci --prefer-offline --no-audit",
-    "railway:start": "NODE_ENV=production node --max-old-space-size=8192 --v8-pool-size=8 dist/app.js",
-    "optimize": "npm run build && npm prune --production"
+    "deploy:full": "npm run build && npm run migrate && npm run cache:setup"
   },
   "dependencies": {
     "express-async-errors": "^3.1.1",
@@ -27,24 +20,18 @@
     "stripe": "^13.3.0",
     "node-cron": "^3.0.2",
     "axios": "^1.5.0",
-    "multer": "^1.4.5-lts.1",
     "compression": "^1.7.4",
     "express-rate-limit": "^6.10.0",
     "uuid": "^9.0.1",
     "geoip-lite": "^1.4.7",
-    "user-agents": "^1.1.1",
     "pino": "^8.17.3",
-    "pino-http": "^9.0.0",
-    "cluster": "^0.7.7",
-    "os": "^0.1.2"
+    "pino-http": "^9.0.0"
   },
   "devDependencies": {
     "typescript": "^5.1.6",
     "nodemon": "^3.0.1",
     "ts-node": "^10.9.1",
     "@types/node": "^20.8.0",
-    "@types/express": "^4.17.17",
-    "@types/cors": "^2.8.13",
-    "@types/node-cron": "^3.0.8"
+    "@types/express": "^4.17.17"
   }
 }
