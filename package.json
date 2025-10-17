@@ -5,9 +5,16 @@
   "scripts": {
     "dev": "NODE_ENV=development nodemon --loader ts-node/esm src/app.ts",
     "build": "tsc --project tsconfig.prod.json",
-    "start": "NODE_ENV=production node dist/app.js",
+    "start": "NODE_ENV=production node --max-old-space-size=4096 dist/app.js",
+    "start:optimized": "NODE_ENV=production node --max-old-space-size=4096 --v8-pool-size=4 dist/app.js",
     "migrate": "npx supabase db push",
-    "cache:setup": "node --loader ts-node/esm src/scripts/setupCacheSystem.ts"
+    "cache:setup": "node --loader ts-node/esm src/scripts/setupCacheSystem.ts",
+    "cache:stats": "node --loader ts-node/esm src/scripts/checkCacheStats.ts",
+    "cache:cleanup": "node --loader ts-node/esm src/scripts/runCacheCleanup.ts",
+    "analytics:report": "node --loader ts-node/esm src/scripts/generateAnalyticsReport.ts",
+    "deploy:full": "npm run build && npm run migrate && npm run cache:setup",
+    "railway:build": "npm install && npm run build",
+    "railway:start": "NODE_ENV=production node dist/app.js"
   },
   "dependencies": {
     "express-async-errors": "^3.1.1",
@@ -19,18 +26,31 @@
     "stripe": "^13.3.0",
     "node-cron": "^3.0.2",
     "axios": "^1.5.0",
+    "multer": "^1.4.5-lts.1",
     "compression": "^1.7.4",
     "express-rate-limit": "^6.10.0",
     "uuid": "^9.0.1",
     "geoip-lite": "^1.4.7",
+    "user-agents": "^1.1.1",
     "pino": "^8.17.3",
-    "pino-http": "^9.0.0"
+    "pino-http": "^9.0.0",
+    "pino-pretty": "^10.0.0"
   },
   "devDependencies": {
     "typescript": "^5.1.6",
     "nodemon": "^3.0.1",
     "ts-node": "^10.9.1",
     "@types/node": "^20.8.0",
-    "@types/express": "^4.17.17"
+    "@types/express": "^4.17.17",
+    "@types/cors": "^2.8.13",
+    "@types/node-cron": "^3.0.8",
+    "@types/multer": "^1.4.7",
+    "@types/compression": "^1.7.2",
+    "@types/stripe": "^8.0.417",
+    "@types/uuid": "^9.0.7",
+    "@types/geoip-lite": "^1.4.3",
+    "@types/axios": "^0.14.0",
+    "@types/user-agents": "^1.0.2",
+    "@types/pino-http": "^5.8.1"
   }
 }
