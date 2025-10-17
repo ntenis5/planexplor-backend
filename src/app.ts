@@ -15,6 +15,9 @@ const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 8080;
 let server: any;
 
+// ==================== FIX PËR RAILWAY PROXY ====================
+app.set('trust proxy', 1); // ✅ KJO E ZGJIDH PROBLEMIN
+
 // ==================== MIDDLEWARE SETUP ====================
 app.use(helmet()); 
 
