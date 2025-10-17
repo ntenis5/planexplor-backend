@@ -5,10 +5,9 @@
   "scripts": {
     "dev": "NODE_ENV=development nodemon --loader ts-node/esm src/app.ts",
     "build": "tsc --project tsconfig.prod.json",
-    "start": "NODE_ENV=production node --max-old-space-size=4096 --v8-pool-size=4 dist/app.js",
+    "start": "NODE_ENV=production node dist/app.js",
     "migrate": "npx supabase db push",
-    "cache:setup": "NODE_ENV=production node dist/scripts/setupCacheSystem.js",
-    "deploy:full": "npm run build && npm run migrate && npm run cache:setup"
+    "cache:setup": "node --loader ts-node/esm src/scripts/setupCacheSystem.ts"
   },
   "dependencies": {
     "express-async-errors": "^3.1.1",
