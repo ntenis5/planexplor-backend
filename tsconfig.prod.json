@@ -13,21 +13,12 @@
     "resolveJsonModule": true,
     "sourceMap": false,
     "removeComments": true,
-    "noEmitOnError": false,
+    "noEmitOnError": true,
     "incremental": false,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "types": ["node"],
-    "declaration": false,
-    "inlineSources": false,
-    "preserveConstEnums": false
+    "types": ["node"]
   },
   "include": ["src/**/*"],
-  "exclude": [
-    "node_modules", 
-    "dist", 
-    "**/*.test.ts",
-    "**/*.spec.ts",
-    "src/cluster.ts"
-  ]
+  "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }
