@@ -5,16 +5,15 @@ WORKDIR /app
 COPY package*.json ./
 COPY tsconfig*.json ./
 
-RUN npm ci --prefer-offline --no-audit
+RUN npm install
 
 COPY . .
-RUN npm run build
 
-RUN npm prune --production
+RUN npm run build
 
 ENV NODE_ENV=production
 ENV PORT=8080
 
 EXPOSE 8080
 
-CMD ["node", "--max-old-space-size=4096", "dist/app.js"]
+CMD ["node", "dist/app.js"]
