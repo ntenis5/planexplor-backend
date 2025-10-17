@@ -1,34 +1,26 @@
-FROM node:20-alpine AS builder
+FROM node:20-alpine
 
 WORKDIR /app
 
+# Kopjo package files së pari për cache optimizim
 COPY package*.json ./
 COPY tsconfig*.json ./
 
-# Cache layers for faster builds
+# INSTALO PA GABIME SINTAKSË
 RUN npm ci --prefer-offline --no-audit
 
+# Kopjo kodin dhe build
 COPY . .
 RUN npm run build
 
-FROM node:20-alpine AS runner
+# Cleanup development dependencies
+RUN npm prune --production
 
-WORKDIR /app
-
-RUN addgroup -g 1001 -S nodejs && adduser -S nodeapp -u 1001 -G nodejs
-
-COPY --from=builder --chown=nodeapp:nodejs /app/package.json ./
-COPY --from=builder --chown=nodeapp:nodejs /app/dist ./dist
-
-RUN npm ci --prefer-offline --no-audit --production && npm cache clean --force
-
-USER nodeapp
-
-# Performance optimized Node.js flags
+# Performance flags
 ENV NODE_ENV=production
 ENV PORT=8080
 
 EXPOSE 8080
 
-# Ultra performance start
-CMD ["node", "--max-old-space-size=8192", "--v8-pool-size=8", "--max-semi-space-size=512", "dist/app.js"]
+# Start me performance optimizations
+CMD ["node", "--max-old-space-size=4096", "dist/app.js"]
