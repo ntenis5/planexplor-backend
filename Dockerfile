@@ -3,8 +3,10 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
+COPY tsconfig*.json ./
 
-RUN npm install
+# Cache layers for faster builds
+RUN npm ci --prefer-offline --no-audit
 
 COPY . .
 RUN npm run build
@@ -14,14 +16,19 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 
 RUN addgroup -g 1001 -S nodejs && adduser -S nodeapp -u 1001 -G nodejs
-RUN chown -R nodeapp:nodejs /app
+
+COPY --from=builder --chown=nodeapp:nodejs /app/package.json ./
+COPY --from=builder --chown=nodeapp:nodejs /app/dist ./dist
+
+RUN npm ci --prefer-offline --no-audit --production && npm cache clean --force
 
 USER nodeapp
 
-COPY --from=builder /app/package.json ./
-RUN npm install --production
-COPY --from=builder /app/dist ./dist
+# Performance optimized Node.js flags
+ENV NODE_ENV=production
+ENV PORT=8080
 
 EXPOSE 8080
 
-CMD ["node", "dist/app.js"]
+# Ultra performance start
+CMD ["node", "--max-old-space-size=8192", "--v8-pool-size=8", "--max-semi-space-size=512", "dist/app.js"]
