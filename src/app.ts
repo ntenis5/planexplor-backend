@@ -15,8 +15,21 @@ const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 8080;
 let server: any;
 
+// ==================== MIDDLEWARE SETUP ====================
 app.use(helmet()); 
-app.use(cors()); 
+
+// CORS I RREGULLUAR - KY ËSHTË FIX-I KRITIK
+app.use(cors({
+  origin: [
+    'https://planexplor-frontend.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://localhost:8080'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
 
 const logger = pino({ 
   level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
@@ -25,8 +38,9 @@ const logger = pino({
   }
 });
 app.use(logger);
-app.use(express.json()); 
+app.use(express.json({ limit: '10mb' })); 
 
+// ==================== ROUTES BAZË ====================
 app.get('/', (req, res) => {
   res.status(200).json({ 
     message: '🚀 Planexplor Backend API is running!',
@@ -37,31 +51,38 @@ app.get('/', (req, res) => {
 });
 
 app.get('/health', (req, res) => {
-  (req as any).log.info('Health check called'); 
+  (req as any).log?.info('Health check called'); 
   res.status(200).json({ 
     status: 'OK',
     service: 'planexplor-backend',
     timestamp: Date.now(),
     uptime: process.uptime(),
     environment: process.env.NODE_ENV,
-    port: PORT
+    port: PORT,
+    memory: process.memoryUsage()
   });
 });
 
+// ==================== SERVER STARTUP ====================
 async function startServer() {
   try {
     console.log(`🚀 Starting server configuration on port ${PORT}...`);
 
+    // Middleware shtesë PAS nisjes së CORS
     app.use(compression()); 
     
     const apiLimiter = rateLimit({
       windowMs: 15 * 60 * 1000,
       max: process.env.NODE_ENV === 'production' ? 1000 : 5000, 
-      message: 'Too many requests'
+      message: 'Too many requests',
+      standardHeaders: true,
+      legacyHeaders: false
     });
     app.use(apiLimiter);
+    
     app.use(express.urlencoded({ extended: true, limit: '10mb' }));
     
+    // ==================== DYNAMIC ROUTE LOADING ====================
     const routes = [
       { path: './routes/geolocation.js', mount: '/api/v1/geolocation' },
       { path: './routes/auth.js', mount: '/api/v1/auth' },
@@ -76,6 +97,7 @@ async function startServer() {
     ];
     
     let loadedRoutes = 0;
+    let failedRoutes = 0;
     
     for (const route of routes) {
       try {
@@ -85,78 +107,91 @@ async function startServer() {
         loadedRoutes++;
       } catch (err: any) {
         console.log(`⚠️  Skipped: ${route.mount} - ${err.message}`);
+        failedRoutes++;
       }
     }
     
     console.log(`🎯 Loaded ${loadedRoutes}/${routes.length} routes successfully!`);
+    if (failedRoutes > 0) {
+      console.log(`⚠️  ${failedRoutes} routes failed to load (non-critical)`);
+    }
     
-    // NUK KA MË INICIALIZIM SHËRBIMESH KËTU! I gjithë kodi që dështon
-    // DHE NUK E MBYLL SERVERIN LËVIZ POSHTË.
-    
-    // HAPI 1: NIS SERVERIN. Kjo garanton që aplikacioni po dëgjon.
+    // ==================== START SERVER (HAPI KRITIK) ====================
     server = app.listen(PORT, '0.0.0.0', () => { 
         console.log(`🎯 SERVER RUNNING on port ${PORT}`);
         console.log(`🌐 Health: http://0.0.0.0:${PORT}/health`);
         console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-        console.log(`📍 Railway PORT: ${process.env.PORT}`);
-        console.log('🚀 Planexplor Backend fully operational!'); // Log i suksesit
+        console.log(`📍 Railway PORT: ${process.env.PORT || 8080}`);
+        console.log('🚀 Planexplor Backend fully operational!');
+        
+        // ==================== INITIALIZE NON-CRITICAL SERVICES ====================
+        // Kjo bëhet PASI serveri të jetë nisur me sukses
+        setTimeout(async () => {
+          try {
+            // Inicializo Cache Maintenance
+            const { cacheMaintenance } = await import('./services/cacheMaintenance.js');
+            if (cacheMaintenance?.startScheduledCleanup) {
+              cacheMaintenance.startScheduledCleanup();
+              console.log('✅ Cache service initialized (Scheduled Cleanup Started)');
+            }
+          } catch (error: any) {
+            console.error(`❌ Cache service init failed (non-critical): ${error.message}`);
+          }
+          
+          try {
+            // Inicializo Analytics Middleware
+            const { default: analyticsMiddleware } = await import('./middleware/analyticsMiddleware.js');
+            if (analyticsMiddleware) {
+              app.use(analyticsMiddleware);
+              console.log('✅ Analytics middleware initialized (post-listen)');
+            }
+          } catch (error: any) {
+            console.error(`❌ Analytics init failed (non-critical): ${error.message}`);
+          }
+        }, 1000); // Vonesë e vogël për të garantuar nisjen e serverit
     });
 
-    // HAPI 2: INICIALIZONI SHËRBIMET JOKRITIKE (Cache, Analytics) PAS NISJES
-    // Vendoset në një bllok try/catch të veçantë që nuk përdor process.exit(1)
-    try {
-      const { cacheMaintenance } = await import('./services/cacheMaintenance.js');
-      const { default: analyticsMiddleware } = await import('./middleware/analyticsMiddleware.js');
-      
-      // Inicializo Cache Maintenance (Kjo dështon dhe shkakton mbylljen)
-      if (cacheMaintenance?.startScheduledCleanup) {
-        cacheMaintenance.startScheduledCleanup();
-        console.log('✅ Cache service initialized (Scheduled Cleanup Started)');
-      }
-      
-      // Inicializo Analytics Middleware (jo-kritik)
-      if (analyticsMiddleware) {
-        app.use(analyticsMiddleware);
-        console.log('✅ Analytics middleware initialized (post-listen)');
-      }
-    } catch (error: any) {
-      // ❌ Kjo thjesht LOGON gabimin, por serveri mbetet aktiv!
-      console.error(`❌ Non-critical service initialization FAILED: ${error.message}`);
-    }
-    
   } catch (error: any) {
-    // 3. GABIMI KRITIK: Ky bllok kap VETËM gabimet që e ndalojnë serverin të nisë
-    // (p.sh., dështimi i ngarkimit të moduleve kryesore, porti i zënë).
+    // Kap VETËM gabimet kritike që ndalojnë nisjen e serverit
     console.error('❌ CRITICAL server startup error:', error.message);
+    console.error('Stack trace:', error.stack);
     process.exit(1);
   }
 }
 
+// ==================== START THE SERVER ====================
 startServer();
 
+// ==================== ERROR HANDLING MIDDLEWARE ====================
 app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
   let errorMessage = 'Internal Server Error';
+  let statusCode = 500;
+  
   if (error instanceof Error) {
     errorMessage = error.message;
-    (req as any).log.error(error, 'Globally captured error'); 
+    (req as any).log?.error(error, 'Globally captured error'); 
   } else {
-    (req as any).log.error(error, 'Unknown error caught globally');
+    (req as any).log?.error(error, 'Unknown error caught globally');
   }
 
-  res.status(500).json({ 
+  res.status(statusCode).json({ 
     error: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : errorMessage,
-    timestamp: Date.now()
+    timestamp: Date.now(),
+    path: req.path
   });
 });
 
+// ==================== 404 HANDLER ====================
 app.use('*', (req: Request, res: Response) => {
   res.status(404).json({ 
     error: 'Route not found', 
     path: req.originalUrl,
-    timestamp: Date.now()
+    timestamp: Date.now(),
+    method: req.method
   });
 });
 
+// ==================== GRACEFUL SHUTDOWN ====================
 process.on('SIGTERM', () => {
   console.log('🛑 Received SIGTERM, shutting down gracefully...');
   if (server) {
@@ -168,4 +203,15 @@ process.on('SIGTERM', () => {
     process.exit(0);
   }
 });
-         
+
+process.on('SIGINT', () => {
+  console.log('🛑 Received SIGINT, shutting down...');
+  if (server) {
+    server.close(() => {
+        console.log('✅ Server closed');
+        process.exit(0);
+    });
+  } else {
+    process.exit(0);
+  }
+});
