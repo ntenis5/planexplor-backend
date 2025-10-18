@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
-import { travelPayoutsService } from '../services/travelpayoutsService';
-import { enhancedCacheService } from '../services/enhancedCacheService';
+// ✅ U Rregullua: Shtuar '.js' për të zgjidhur gabimin "Cannot find module"
+import { travelPayoutsService } from '../services/travelpayoutsService.js';
+import { enhancedCacheService } from '../services/enhancedCacheService.js';
 
 const flightsRouter = Router();
 
