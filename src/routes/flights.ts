@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-// ✅ U Rregullua: Shtuar '.js' për të zgjidhur gabimin "Cannot find module"
+// Importet me '.js' janë ruajtur si rregullimi i duhur për gabimin fillestar.
 import { travelPayoutsService } from '../services/travelpayoutsService.js';
 import { enhancedCacheService } from '../services/enhancedCacheService.js';
 
@@ -22,14 +22,24 @@ interface SuggestionsParams {
   query?: string;
 }
 
-// ✅ SEARCH FLIGHTS
-flightsRouter.get('/search', async (req: Request, res: Response) => {
-  console.log('🔴 DEBUG: /search endpoint called');
+// ✅ SEARCH FLIGHTS (Tani në rrugën bazë: /api/v1/flights?origin=...)
+flightsRouter.get('/', async (req: Request, res: Response) => {
+  console.log('🔴 DEBUG: Root /flights endpoint called for SEARCH');
   const { origin, destination, departDate, returnDate, adults, children, infants } = req.query;
 
+  // Nëse nuk ka parametra kryesorë (origin, destination, departDate), provojmë të trajtojmë kërkesat pa query
+  if (!origin && !destination && !departDate) {
+      // Le të vazhdojë nëse është thirrur thjesht /api/v1/flights pa query, 
+      // sepse ndoshta është bërë gabim ose për arsye tjetër
+      return res.status(200).json({ 
+          message: 'Flights API is active. Use /cheapest, /suggestions, /airports, or add query params to search (e.g., ?origin=TIA&destination=VIE&departDate=YYYY-MM-DD).'
+      });
+  }
+
+  // Tani vazhdojmë me logjikën e kërkimit (search)
   if (!origin || !destination || !departDate) {
     return res.status(400).json({ 
-      error: 'Origin, destination and depart date are required' 
+      error: 'Origin, destination and depart date are required for a flight search' 
     });
   }
 
@@ -92,10 +102,11 @@ flightsRouter.get('/search', async (req: Request, res: Response) => {
   }
 });
 
-// ✅ CHEAPEST FLIGHTS
+// ✅ CHEAPEST FLIGHTS (Mbetet: /api/v1/flights/cheapest)
 flightsRouter.get('/cheapest', async (req: Request, res: Response) => {
   console.log('🔴 DEBUG: /cheapest endpoint called');
   const { origin, destination } = req.query;
+  // ... pjesa tjetër e kodit pa ndryshim ...
 
   if (!origin) {
     return res.status(400).json({ error: 'Origin is required' });
@@ -142,11 +153,12 @@ flightsRouter.get('/cheapest', async (req: Request, res: Response) => {
   }
 });
 
-// ✅ SUGGESTIONS
+// ✅ SUGGESTIONS (Mbetet: /api/v1/flights/suggestions)
 flightsRouter.get('/suggestions', async (req: Request, res: Response) => {
   console.log('🔴 DEBUG: /suggestions endpoint called');
   const { query } = req.query;
 
+  // ... pjesa tjetër e kodit pa ndryshim ...
   if (!query) {
     return res.status(400).json({ error: 'Query is required' });
   }
@@ -189,9 +201,10 @@ flightsRouter.get('/suggestions', async (req: Request, res: Response) => {
   }
 });
 
-// ✅ AIRPORTS
+// ✅ AIRPORTS (Mbetet: /api/v1/flights/airports)
 flightsRouter.get('/airports', async (req: Request, res: Response) => {
   console.log('🔴 DEBUG: /airports endpoint called');
+  // ... pjesa tjetër e kodit pa ndryshim ...
   try {
     const cacheKey = 'all_airports';
     
