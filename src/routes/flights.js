@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { travelPayoutsService } from '../services/travelpayoutsService.js';
+import { travelPayoutsService } from '../services/travelpayoutsService';
 import { enhancedCacheService } from '../services/enhancedCacheService.js';
 
 const flightsRouter = Router();
