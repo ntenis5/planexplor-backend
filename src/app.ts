@@ -1,21 +1,15 @@
-// RRESHTI 1: I THOTË NODE.JS TË NGRKARKOJË VARIABLAT E .env QË NË FILLIM
-// Kjo zëvendëson logjikën e vonuar me "if (process.env.NODE_ENV !== 'production') { dotenv.config(); }"
-require('dotenv').config(); 
-
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import pino from 'pino-http';
-// E FSHIM KËTË LINJË: import dotenv from 'dotenv'; 
+import dotenv from 'dotenv';
 import 'express-async-errors';
 
-// Kjo logjikë nuk është më e nevojshme dhe fshihet:
-// if (process.env.NODE_ENV !== 'production') {
-//   dotenv.config();
-// }
-
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config();
+}
 
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 8080;
@@ -116,14 +110,7 @@ async function startServer() {
       console.log(`✅ Mounted: ${route.mount}`);
       loadedRoutes++;
     } catch (err: any) {
-      // Shpesh errori këtu është për shkak të mungesës së çelësave të Supabase (variablave mjedisore)
-      // Mungesa e tyre shkakton dështimin e inicializimit të modulit të Supabase në route files
-      const isSupabaseError = err.message.includes('SUPABASE_URL') || err.message.includes('SUPABASE_ANON_KEY');
-      if (isSupabaseError) {
-          console.log(`❌ CRITIC ERROR: ${route.mount} - Supabase variables missing! Fix .env file.`);
-      } else {
-          console.log(`⚠️  Skipped: ${route.mount} - ${err.message}`);
-      }
+      console.log(`⚠️  Skipped: ${route.mount} - ${err.message}`);
       failedRoutes++;
     }
   }
@@ -225,4 +212,3 @@ startServer().catch((error) => {
   console.error('❌ CRITICAL server startup error:', error.message);
   process.exit(1);
 });
-  
