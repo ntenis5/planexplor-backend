@@ -16,12 +16,10 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT) : 8080;
 let server: any;
 
 // ==================== FIX PËR RAILWAY PROXY ====================
-app.set('trust proxy', 1); // ✅ KJO E ZGJIDH PROBLEMIN
+app.set('trust proxy', 1);
 
 // ==================== MIDDLEWARE SETUP ====================
 app.use(helmet()); 
-
-// CORS I RREGULLUAR - KY ËSHTË FIX-I KRITIK
 app.use(cors({
   origin: [
     'https://planexplor-frontend.vercel.app',
@@ -71,7 +69,6 @@ async function startServer() {
   try {
     console.log(`🚀 Starting server configuration on port ${PORT}...`);
 
-    // Middleware shtesë PAS nisjes së CORS
     app.use(compression()); 
     
     const apiLimiter = rateLimit({
@@ -119,7 +116,7 @@ async function startServer() {
       console.log(`⚠️  ${failedRoutes} routes failed to load (non-critical)`);
     }
     
-    // ==================== START SERVER (HAPI KRITIK) ====================
+    // ==================== START SERVER ====================
     server = app.listen(PORT, '0.0.0.0', () => { 
         console.log(`🎯 SERVER RUNNING on port ${PORT}`);
         console.log(`🌐 Health: http://0.0.0.0:${PORT}/health`);
@@ -127,35 +124,31 @@ async function startServer() {
         console.log(`📍 Railway PORT: ${process.env.PORT || 8080}`);
         console.log('🚀 Planexplor Backend fully operational!');
         
-        // ==================== INITIALIZE NON-CRITICAL SERVICES ====================
-        // Kjo bëhet PASI serveri të jetë nisur me sukses
+        // ==================== INITIALIZE SERVICES ====================
         setTimeout(async () => {
           try {
-            // Inicializo Cache Maintenance
             const { cacheMaintenance } = await import('./services/cacheMaintenance.js');
             if (cacheMaintenance?.startScheduledCleanup) {
               cacheMaintenance.startScheduledCleanup();
               console.log('✅ Cache service initialized (Scheduled Cleanup Started)');
             }
           } catch (error: any) {
-            console.error(`❌ Cache service init failed (non-critical): ${error.message}`);
+            console.error(`❌ Cache service init failed: ${error.message}`);
           }
           
           try {
-            // Inicializo Analytics Middleware
             const { default: analyticsMiddleware } = await import('./middleware/analyticsMiddleware.js');
             if (analyticsMiddleware) {
               app.use(analyticsMiddleware);
               console.log('✅ Analytics middleware initialized (post-listen)');
             }
           } catch (error: any) {
-            console.error(`❌ Analytics init failed (non-critical): ${error.message}`);
+            console.error(`❌ Analytics init failed: ${error.message}`);
           }
-        }, 1000); // Vonesë e vogël për të garantuar nisjen e serverit
+        }, 1000);
     });
 
   } catch (error: any) {
-    // Kap VETËM gabimet kritike që ndalojnë nisjen e serverit
     console.error('❌ CRITICAL server startup error:', error.message);
     console.error('Stack trace:', error.stack);
     process.exit(1);
@@ -165,7 +158,7 @@ async function startServer() {
 // ==================== START THE SERVER ====================
 startServer();
 
-// ==================== ERROR HANDLING MIDDLEWARE ====================
+// ==================== ERROR HANDLING ====================
 app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
   let errorMessage = 'Internal Server Error';
   let statusCode = 500;
