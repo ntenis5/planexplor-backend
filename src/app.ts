@@ -90,7 +90,7 @@ async function startServer() {
       { path: './routes/payments.js', mount: '/api/v1/payments' },
       { path: './routes/affiliate.js', mount: '/api/v1/affiliate' },
       { path: './routes/feed.js', mount: '/api/v1/feed' },
-      { path: './routes/flights.ts', mount: '/api/v1/flights' },
+      { path: './routes/flights.js', mount: '/api/v1/flights' },
       { path: './routes/systemAdmin.js', mount: '/api/v1/admin/system' },
       { path: './routes/cacheAdmin.js', mount: '/api/v1/admin/cache' },
       { path: './routes/analyticsDashboard.js', mount: '/api/v1/analytics' }
