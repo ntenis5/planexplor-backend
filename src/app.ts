@@ -91,10 +91,9 @@ async function startServer() {
     { path: './routes/payments.js', mount: '/api/v1/payments' },
     { path: './routes/affiliate.js', mount: '/api/v1/affiliate' },
     { path: './routes/feed.js', mount: '/api/v1/feed' },
-    // ==================== FIX: FLIGHTS + ALIAS ====================
-    { path: './routes/flights.js', mount: '/api/v1/flight' },
-    { path: './routes/flights.js', mount: '/api/v1/flights' }, // alias për versionin me “s”
-    // ==============================================================
+    // ==================== FIX: VETËM NJË FLIGHTS ROUTE ====================
+    { path: './routes/flights.js', mount: '/api/v1/flights' }, // VETËM KJO!
+    // =======================================================================
     { path: './routes/systemAdmin.js', mount: '/api/v1/admin/system' },
     { path: './routes/cacheAdmin.js', mount: '/api/v1/admin/cache' },
     { path: './routes/analyticsDashboard.js', mount: '/api/v1/analytics' },
