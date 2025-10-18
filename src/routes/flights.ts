@@ -2,48 +2,23 @@ import { Router, Request, Response } from 'express';
 
 const flightsRouter = Router();
 
-// DYNAMIC IMPORT PËR TË SHMANGUR EXTENSION PROBLEMET
-let travelPayoutsService;
-let enhancedCacheService;
+// PËRDOR VETËM FALLBACK SERVICES - PA IMPORT PROBLEME
+const travelPayoutsService = {
+  getAirports: () => {
+    console.log('🔴 DEBUG: Using fallback airports');
+    return Promise.resolve([]);
+  },
+  searchFlights: () => Promise.resolve([]),
+  getCheapestFlights: () => Promise.resolve([]),
+  getDestinationSuggestions: () => Promise.resolve([])
+};
 
-console.log('🔴 DEBUG: flights.ts - Starting dynamic imports...');
+const enhancedCacheService = {
+  smartGet: () => Promise.resolve({ status: 'miss', data: null }),
+  smartSet: () => Promise.resolve({ success: true })
+};
 
-try {
-  const travelModule = await import('../../src/services/travelpayoutsService.js');
-  travelPayoutsService = travelModule.travelPayoutsService;
-  console.log('✅ DEBUG: travelPayoutsService loaded successfully');
-} catch (error) {
-  console.error('❌ DEBUG: travelPayoutsService import failed:', error);
-  // Fallback service
-  travelPayoutsService = {
-    getAirports: () => {
-      console.log('🔴 DEBUG: Using fallback airports');
-      return Promise.resolve([
-        { code: 'TEST', name: 'Test Airport', city: 'Test City' }
-      ]);
-    },
-    searchFlights: () => Promise.resolve([]),
-    getCheapestFlights: () => Promise.resolve([]),
-    getDestinationSuggestions: () => Promise.resolve([])
-  };
-}
-
-try {
-  const cacheModule = await import('../../src/services/enhancedCacheService.js');
-  enhancedCacheService = cacheModule.enhancedCacheService;
-  console.log('✅ DEBUG: enhancedCacheService loaded successfully');
-} catch (error) {
-  console.error('❌ DEBUG: enhancedCacheService import failed:', error);
-  // Fallback cache service
-  enhancedCacheService = {
-    smartGet: () => Promise.resolve({ status: 'miss', data: null }),
-    smartSet: () => Promise.resolve({ success: true })
-  };
-}
-
-console.log('🔴 DEBUG: flights.ts loaded successfully!');
-console.log('🔴 DEBUG: travelPayoutsService type:', typeof travelPayoutsService);
-console.log('🔴 DEBUG: enhancedCacheService type:', typeof enhancedCacheService);
+console.log('🔴 DEBUG: flights.ts loaded successfully with fallback services!');
 
 // ✅ INTERFACES
 interface FlightSearchParams {
@@ -116,7 +91,7 @@ flightsRouter.get('/search', async (req: Request, res: Response) => {
 
     res.json({
       flights,
-      source: 'api',
+      source: 'fallback',
       cached: false,
       timestamp: new Date().toISOString()
     });
@@ -170,7 +145,7 @@ flightsRouter.get('/cheapest', async (req: Request, res: Response) => {
 
     res.json({
       cheapestFlights,
-      source: 'api',
+      source: 'fallback',
       cached: false
     });
 
@@ -217,7 +192,7 @@ flightsRouter.get('/suggestions', async (req: Request, res: Response) => {
 
     res.json({
       suggestions,
-      source: 'api',
+      source: 'fallback',
       cached: false
     });
 
@@ -260,7 +235,7 @@ flightsRouter.get('/airports', async (req: Request, res: Response) => {
 
     res.json({
       airports,
-      source: 'api', 
+      source: 'fallback', 
       cached: false
     });
 
