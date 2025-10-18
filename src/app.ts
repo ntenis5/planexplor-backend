@@ -6,10 +6,6 @@ import rateLimit from 'express-rate-limit';
 import pino from 'pino-http';
 import 'express-async-errors';
 
-if (process.env.NODE_ENV !== 'production') {
-  dotenv.config();
-}
-
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 8080;
 let server: any;
