@@ -3,18 +3,18 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "NODE_ENV=development nodemon --loader ts-node/esm src/app.ts",
+    "dev": "NODE_ENV=development nodemon --exec ts-node --esm src/app.ts",
     "build": "tsc --project tsconfig.prod.json",
-    "start": "NODE_ENV=production node --max-old-space-size=4096 dist/app.js",
-    "start:optimized": "NODE_ENV=production node --max-old-space-size=4096 --v8-pool-size=4 dist/app.js",
+    "start": "NODE_ENV=production ts-node --esm src/app.ts",
+    "start:optimized": "NODE_ENV=production ts-node --esm src/app.ts",
     "migrate": "npx supabase db push",
-    "cache:setup": "node --loader ts-node/esm src/scripts/setupCacheSystem.ts",
-    "cache:stats": "node --loader ts-node/esm src/scripts/checkCacheStats.ts",
-    "cache:cleanup": "node --loader ts-node/esm src/scripts/runCacheCleanup.ts",
-    "analytics:report": "node --loader ts-node/esm src/scripts/generateAnalyticsReport.ts",
+    "cache:setup": "ts-node --esm src/scripts/setupCacheSystem.ts",
+    "cache:stats": "ts-node --esm src/scripts/checkCacheStats.ts",
+    "cache:cleanup": "ts-node --esm src/scripts/runCacheCleanup.ts",
+    "analytics:report": "ts-node --esm src/scripts/generateAnalyticsReport.ts",
     "deploy:full": "npm run build && npm run migrate && npm run cache:setup",
-    "railway:build": "npm install && npm run build",
-    "railway:start": "NODE_ENV=production node dist/app.js"
+    "railway:build": "npm install",
+    "railway:start": "NODE_ENV=production ts-node --esm src/app.ts"
   },
   "dependencies": {
     "express-async-errors": "^3.1.1",
