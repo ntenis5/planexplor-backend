@@ -1,10 +1,32 @@
 import { Router, Request, Response } from 'express';
-import { travelPayoutsService } from '../services/travelpayoutsService.js';
-import { enhancedCacheService } from '../services/enhancedCacheService.js';
+import { travelPayoutsService } from '../services/travelpayoutsService.ts';
+import { enhancedCacheService } from '../services/enhancedCacheService.ts';
 
 const flightsRouter = Router();
 
+// ✅ DEBUG LOGS
+console.log('🔴 DEBUG: flights.ts loaded successfully!');
+console.log('🔴 DEBUG: travelPayoutsService type:', typeof travelPayoutsService);
+console.log('🔴 DEBUG: enhancedCacheService type:', typeof enhancedCacheService);
+
+// ✅ INTERFACES
+interface FlightSearchParams {
+  origin?: string;
+  destination?: string;
+  departDate?: string;
+  returnDate?: string;
+  adults?: string;
+  children?: string;
+  infants?: string;
+}
+
+interface SuggestionsParams {
+  query?: string;
+}
+
+// ✅ SEARCH FLIGHTS
 flightsRouter.get('/search', async (req: Request, res: Response) => {
+  console.log('🔴 DEBUG: /search endpoint called');
   const { origin, destination, departDate, returnDate, adults, children, infants } = req.query;
 
   if (!origin || !destination || !departDate) {
@@ -14,7 +36,9 @@ flightsRouter.get('/search', async (req: Request, res: Response) => {
   }
 
   try {
-    const cacheKey = `flights_${origin}_${destination}_${departDate}_${returnDate}_${adults}_${children}_${infants}`;
+    const cacheKey = `flights_${origin}_${destination}_${departDate}_${returnDate || ''}_${adults || '1'}_${children || '0'}_${infants || '0'}`;
+    
+    console.log('🔴 DEBUG: Cache key:', cacheKey);
     
     const cachedResults = await enhancedCacheService.smartGet(
       cacheKey, 
@@ -22,7 +46,9 @@ flightsRouter.get('/search', async (req: Request, res: Response) => {
       'eu'
     );
 
-    if (cachedResults.status === 'hit') {
+    console.log('🔴 DEBUG: Cache result:', cachedResults.status);
+
+    if (cachedResults.status === 'hit' && cachedResults.data) {
       return res.json({ 
         flights: cachedResults.data,
         source: 'cache',
@@ -31,7 +57,7 @@ flightsRouter.get('/search', async (req: Request, res: Response) => {
       });
     }
 
-    console.log('Fetching fresh flights data from TravelPayouts...');
+    console.log('🔴 DEBUG: Fetching fresh flights data from TravelPayouts...');
     
     const flights = await travelPayoutsService.searchFlights({
       origin: origin as string,
@@ -42,6 +68,8 @@ flightsRouter.get('/search', async (req: Request, res: Response) => {
       children: parseInt(children as string) || 0,
       infants: parseInt(infants as string) || 0
     });
+
+    console.log('🔴 DEBUG: Flights received:', flights?.length || 0);
 
     await enhancedCacheService.smartSet(
       cacheKey,
@@ -58,7 +86,7 @@ flightsRouter.get('/search', async (req: Request, res: Response) => {
     });
 
   } catch (error: any) {
-    console.error('Flights search error:', error);
+    console.error('🔴 DEBUG: Flights search error:', error);
     res.status(500).json({ 
       error: 'Failed to search flights',
       details: error.message 
@@ -66,7 +94,9 @@ flightsRouter.get('/search', async (req: Request, res: Response) => {
   }
 });
 
+// ✅ CHEAPEST FLIGHTS
 flightsRouter.get('/cheapest', async (req: Request, res: Response) => {
+  console.log('🔴 DEBUG: /cheapest endpoint called');
   const { origin, destination } = req.query;
 
   if (!origin) {
@@ -82,7 +112,7 @@ flightsRouter.get('/cheapest', async (req: Request, res: Response) => {
       'eu'
     );
 
-    if (cachedResults.status === 'hit') {
+    if (cachedResults.status === 'hit' && cachedResults.data) {
       return res.json({ 
         cheapestFlights: cachedResults.data,
         source: 'cache',
@@ -109,12 +139,14 @@ flightsRouter.get('/cheapest', async (req: Request, res: Response) => {
     });
 
   } catch (error: any) {
-    console.error('Cheapest flights error:', error);
+    console.error('🔴 DEBUG: Cheapest flights error:', error);
     res.status(500).json({ error: 'Failed to fetch cheapest flights' });
   }
 });
 
+// ✅ SUGGESTIONS
 flightsRouter.get('/suggestions', async (req: Request, res: Response) => {
+  console.log('🔴 DEBUG: /suggestions endpoint called');
   const { query } = req.query;
 
   if (!query) {
@@ -130,7 +162,7 @@ flightsRouter.get('/suggestions', async (req: Request, res: Response) => {
       'eu'
     );
 
-    if (cachedResults.status === 'hit') {
+    if (cachedResults.status === 'hit' && cachedResults.data) {
       return res.json({ 
         suggestions: cachedResults.data,
         source: 'cache',
@@ -154,12 +186,14 @@ flightsRouter.get('/suggestions', async (req: Request, res: Response) => {
     });
 
   } catch (error: any) {
-    console.error('Flight suggestions error:', error);
+    console.error('🔴 DEBUG: Flight suggestions error:', error);
     res.status(500).json({ error: 'Failed to fetch suggestions' });
   }
 });
 
+// ✅ AIRPORTS
 flightsRouter.get('/airports', async (req: Request, res: Response) => {
+  console.log('🔴 DEBUG: /airports endpoint called');
   try {
     const cacheKey = 'all_airports';
     
@@ -169,7 +203,7 @@ flightsRouter.get('/airports', async (req: Request, res: Response) => {
       'eu'
     );
 
-    if (cachedResults.status === 'hit') {
+    if (cachedResults.status === 'hit' && cachedResults.data) {
       return res.json({ 
         airports: cachedResults.data,
         source: 'cache',
@@ -177,7 +211,9 @@ flightsRouter.get('/airports', async (req: Request, res: Response) => {
       });
     }
 
+    console.log('🔴 DEBUG: Fetching airports from TravelPayouts...');
     const airports = await travelPayoutsService.getAirports();
+    console.log('🔴 DEBUG: Airports received:', airports?.length || 0);
 
     await enhancedCacheService.smartSet(
       cacheKey,
@@ -193,7 +229,7 @@ flightsRouter.get('/airports', async (req: Request, res: Response) => {
     });
 
   } catch (error: any) {
-    console.error('Airports fetch error:', error);
+    console.error('🔴 DEBUG: Airports fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch airports' });
   }
 });
