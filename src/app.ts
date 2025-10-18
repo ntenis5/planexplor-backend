@@ -64,7 +64,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// ==================== SERVER STARTUP ====================
+// ==================== 1. SERVER STARTUP DHE NGARKIMI I RRUGËVE (ASYNC) ====================
 async function startServer() {
   console.log(`🚀 Starting server configuration on port ${PORT}...`);
 
@@ -89,7 +89,7 @@ async function startServer() {
     { path: './routes/payments.js', mount: '/api/v1/payments' },
     { path: './routes/affiliate.js', mount: '/api/v1/affiliate' },
     { path: './routes/feed.js', mount: '/api/v1/feed' },
-    { path: './routes/flights.js', mount: '/api/v1/flights' },
+    { path: './routes/flights.js', mount: '/api/v1/flights' }, // Rruga e Fluturimeve
     { path: './routes/systemAdmin.js', mount: '/api/v1/admin/system' },
     { path: './routes/cacheAdmin.js', mount: '/api/v1/admin/cache' },
     { path: './routes/analyticsDashboard.js', mount: '/api/v1/analytics' }
@@ -98,7 +98,7 @@ async function startServer() {
   let loadedRoutes = 0;
   let failedRoutes = 0;
   
-  // 🎯 Këtu bëhet ngarkimi ASINKRON
+  // Await këtu siguron që të gjitha rrugët të jenë ngarkuar para se të fillojë dëgjimi
   for (const route of routes) {
     try {
       const module = await import(route.path);
@@ -106,6 +106,7 @@ async function startServer() {
       console.log(`✅ Mounted: ${route.mount}`);
       loadedRoutes++;
     } catch (err: any) {
+      // Nëse një rrugë dështon, ajo shmanget, por serveri vazhdon
       console.log(`⚠️  Skipped: ${route.mount} - ${err.message}`);
       failedRoutes++;
     }
@@ -116,7 +117,7 @@ async function startServer() {
     console.log(`⚠️  ${failedRoutes} routes failed to load (non-critical)`);
   }
   
-  // ==================== START SERVER ====================
+  // ==================== START SERVER DHE INITIALIZE SERVICES ====================
   server = app.listen(PORT, '0.0.0.0', () => { 
       console.log(`🎯 SERVER RUNNING on port ${PORT}`);
       console.log(`🌐 Health: http://0.0.0.0:${PORT}/health`);
@@ -124,10 +125,9 @@ async function startServer() {
       console.log(`📍 Railway PORT: ${process.env.PORT || 8080}`);
       console.log('🚀 Planexplor Backend fully operational!');
       
-      // ==================== INITIALIZE SERVICES ====================
+      // Initialize Services (pas dëgjimit të portës)
       setTimeout(async () => {
         try {
-          // Importet me .js këtu janë të sakta
           const { cacheMaintenance } = await import('./services/cacheMaintenance.js');
           if (cacheMaintenance?.startScheduledCleanup) {
             cacheMaintenance.startScheduledCleanup();
@@ -138,7 +138,6 @@ async function startServer() {
         }
         
         try {
-          // Importet me .js këtu janë të sakta
           const { default: analyticsMiddleware } = await import('./middleware/analyticsMiddleware.js');
           if (analyticsMiddleware) {
             app.use(analyticsMiddleware);
@@ -151,7 +150,7 @@ async function startServer() {
   });
 }
 
-// ==================== GRACEFUL SHUTDOWN ====================
+// ==================== 2. GRACEFUL SHUTDOWN ====================
 process.on('SIGTERM', () => {
   console.log('🛑 Received SIGTERM, shutting down gracefully...');
   if (server) {
@@ -176,8 +175,8 @@ process.on('SIGINT', () => {
   }
 });
 
-// ==================== 4. ERROR HANDLING (KËTU DUHET TË JAPË FUND) ====================
-// ⚠️ Kjo duhet të jetë para 404 handlerit
+// ==================== 3. ERROR HANDLING (GLOBAL) ====================
+// Kjo duhet të jetë para 404 handlerit
 app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
   let errorMessage = 'Internal Server Error';
   let statusCode = 500;
@@ -196,8 +195,8 @@ app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
   });
 });
 
-// ==================== 5. 404 HANDLER (KJO DUHET TË JETË BLOKU I FUNDIT) ====================
-// ⚠️ Kap çdo rrugë që nuk u gjet pas ngarkimit asinkron
+// ==================== 4. 404 HANDLER (BLOKU I FUNDIT) ====================
+// Kjo kap çdo kërkesë që nuk u përputh me asnjë nga rrugët e ngarkuara më lart
 app.use('*', (req: Request, res: Response) => {
   res.status(404).json({ 
     error: 'Route not found', 
@@ -207,10 +206,10 @@ app.use('*', (req: Request, res: Response) => {
   });
 });
 
-// ==================== 3. START THE SERVER (THIRRJA KRYESORE E FUNDIT) ====================
-// ⚠️ Kjo thirret vetëm pasi të jenë definuar të gjitha error handler-et
+// ==================== 5. THIRRJA FINALE E SERVERIT ====================
 startServer().catch(error => {
+    // Kap gabimet kritike të startup-it (p.sh., lidhja me DB)
     console.error('❌ CRITICAL server startup error:', error.message);
     process.exit(1);
 });
-    
+      
