@@ -2,20 +2,17 @@ import { Router, Request, Response } from 'express';
 
 const flightsRouter = Router();
 
-// PËRDOR VETËM FALLBACK SERVICES - PA IMPORT PROBLEME
+// FIX: Shto parametrat në funksionet fallback
 const travelPayoutsService = {
-  getAirports: () => {
-    console.log('🔴 DEBUG: Using fallback airports');
-    return Promise.resolve([]);
-  },
-  searchFlights: () => Promise.resolve([]),
-  getCheapestFlights: () => Promise.resolve([]),
-  getDestinationSuggestions: () => Promise.resolve([])
+  getAirports: () => Promise.resolve([]),
+  searchFlights: (params: any) => Promise.resolve([]),
+  getCheapestFlights: (origin: string, destination?: string) => Promise.resolve([]),
+  getDestinationSuggestions: (query: string) => Promise.resolve([])
 };
 
 const enhancedCacheService = {
-  smartGet: () => Promise.resolve({ status: 'miss', data: null }),
-  smartSet: () => Promise.resolve({ success: true })
+  smartGet: (key: string, category: string, region: string) => Promise.resolve({ status: 'miss', data: null }),
+  smartSet: (key: string, data: any, category: string, region: string) => Promise.resolve({ success: true })
 };
 
 console.log('🔴 DEBUG: flights.ts loaded successfully with fallback services!');
