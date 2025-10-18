@@ -1,10 +1,33 @@
 import { Router, Request, Response } from 'express';
-import { travelPayoutsService } from '../services/travelpayoutsService';
 import { enhancedCacheService } from '../services/enhancedCacheService.js';
 
 const flightsRouter = Router();
 
 console.log('🔴 DEBUG: flights.js loaded successfully!'); // ✅ DEBUG 1
+
+// DYNAMIC IMPORT PËR TRAVELPAYOUTS SERVICE
+let travelPayoutsService;
+try {
+  const module = await import('../services/travelpayoutsService.js');
+  travelPayoutsService = module.travelPayoutsService;
+  console.log('✅ travelPayoutsService loaded successfully');
+} catch (error) {
+  console.error('❌ travelPayoutsService load failed:', error);
+  // Fallback service
+  travelPayoutsService = {
+    getAirports: () => {
+      console.log('🔴 Using fallback airports');
+      return Promise.resolve([]);
+    },
+    searchFlights: () => Promise.resolve([]),
+    getCheapestFlights: () => Promise.resolve([]),
+    getDestinationSuggestions: () => Promise.resolve([])
+  };
+}
+
+// ✅ DEBUG 2 - Kontrollo nëse services janë të importuar
+console.log('🔴 DEBUG: travelPayoutsService type:', typeof travelPayoutsService);
+console.log('🔴 DEBUG: enhancedCacheService type:', typeof enhancedCacheService);
 
 interface FlightSearchParams {
   origin?: string;
@@ -19,10 +42,6 @@ interface FlightSearchParams {
 interface SuggestionsParams {
   query?: string;
 }
-
-// ✅ DEBUG 2 - Kontrollo nëse services janë të importuar
-console.log('🔴 DEBUG: travelPayoutsService type:', typeof travelPayoutsService);
-console.log('🔴 DEBUG: enhancedCacheService type:', typeof enhancedCacheService);
 
 flightsRouter.get('/search', async (req: Request, res: Response) => {
   console.log('🔴 DEBUG: /search endpoint called'); // ✅ DEBUG 3
