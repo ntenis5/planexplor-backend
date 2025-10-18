@@ -1,9 +1,15 @@
 #!/bin/bash
 set -e
 
-cp -r src/services/ dist/services/ 2>/dev/null || true
+if [ ! -d "dist" ]; then
+    npm run build
+fi
+
+if [ ! -f "dist/app.js" ]; then
+    npm run build
+fi
 
 export NODE_ENV=production
 export PORT=$PORT
 
-exec npx ts-node --esm src/app.ts
+exec node dist/app.js
