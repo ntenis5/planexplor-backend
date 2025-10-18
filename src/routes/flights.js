@@ -4,6 +4,8 @@ import { enhancedCacheService } from '../services/enhancedCacheService.js';
 
 const flightsRouter = Router();
 
+console.log('🔴 DEBUG: flights.js loaded successfully!'); // ✅ DEBUG 1
+
 interface FlightSearchParams {
   origin?: string;
   destination?: string;
@@ -18,7 +20,12 @@ interface SuggestionsParams {
   query?: string;
 }
 
+// ✅ DEBUG 2 - Kontrollo nëse services janë të importuar
+console.log('🔴 DEBUG: travelPayoutsService type:', typeof travelPayoutsService);
+console.log('🔴 DEBUG: enhancedCacheService type:', typeof enhancedCacheService);
+
 flightsRouter.get('/search', async (req: Request, res: Response) => {
+  console.log('🔴 DEBUG: /search endpoint called'); // ✅ DEBUG 3
   const { origin, destination, departDate, returnDate, adults, children, infants } = req.query as FlightSearchParams;
 
   if (!origin || !destination || !departDate) {
@@ -81,6 +88,7 @@ flightsRouter.get('/search', async (req: Request, res: Response) => {
 });
 
 flightsRouter.get('/cheapest', async (req: Request, res: Response) => {
+  console.log('🔴 DEBUG: /cheapest endpoint called'); // ✅ DEBUG 4
   const { origin, destination } = req.query as FlightSearchParams;
 
   if (!origin) {
@@ -126,6 +134,7 @@ flightsRouter.get('/cheapest', async (req: Request, res: Response) => {
 });
 
 flightsRouter.get('/suggestions', async (req: Request, res: Response) => {
+  console.log('🔴 DEBUG: /suggestions endpoint called'); // ✅ DEBUG 5
   const { query } = req.query as SuggestionsParams;
 
   if (!query) {
@@ -171,6 +180,7 @@ flightsRouter.get('/suggestions', async (req: Request, res: Response) => {
 });
 
 flightsRouter.get('/airports', async (req: Request, res: Response) => {
+  console.log('🔴 DEBUG: /airports endpoint called'); // ✅ DEBUG 6
   try {
     const cacheKey = 'all_airports';
     
