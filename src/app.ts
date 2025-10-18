@@ -83,6 +83,7 @@ async function startServer() {
     app.use(express.urlencoded({ extended: true, limit: '10mb' }));
     
     // ==================== DYNAMIC ROUTE LOADING ====================
+    // ⚠️ Këtu janë tashmë me '.js', kështu që kjo pjesë është e saktë.
     const routes = [
       { path: './routes/geolocation.js', mount: '/api/v1/geolocation' },
       { path: './routes/auth.js', mount: '/api/v1/auth' },
@@ -127,6 +128,7 @@ async function startServer() {
         // ==================== INITIALIZE SERVICES ====================
         setTimeout(async () => {
           try {
+            // Importet me .js këtu janë të sakta
             const { cacheMaintenance } = await import('./services/cacheMaintenance.js');
             if (cacheMaintenance?.startScheduledCleanup) {
               cacheMaintenance.startScheduledCleanup();
@@ -137,6 +139,7 @@ async function startServer() {
           }
           
           try {
+            // Importet me .js këtu janë të sakta
             const { default: analyticsMiddleware } = await import('./middleware/analyticsMiddleware.js');
             if (analyticsMiddleware) {
               app.use(analyticsMiddleware);
