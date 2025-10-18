@@ -1,10 +1,46 @@
 import { Router, Request, Response } from 'express';
-import { travelPayoutsService } from '../services/travelpayoutsService.ts';
-import { enhancedCacheService } from '../services/enhancedCacheService.ts';
 
 const flightsRouter = Router();
 
-// ✅ DEBUG LOGS
+// DYNAMIC IMPORT PËR TË SHMANGUR EXTENSION PROBLEMET
+let travelPayoutsService;
+let enhancedCacheService;
+
+console.log('🔴 DEBUG: flights.ts - Starting dynamic imports...');
+
+try {
+  const travelModule = await import('../services/travelpayoutsService');
+  travelPayoutsService = travelModule.travelPayoutsService;
+  console.log('✅ DEBUG: travelPayoutsService loaded successfully');
+} catch (error) {
+  console.error('❌ DEBUG: travelPayoutsService import failed:', error);
+  // Fallback service
+  travelPayoutsService = {
+    getAirports: () => {
+      console.log('🔴 DEBUG: Using fallback airports');
+      return Promise.resolve([
+        { code: 'TEST', name: 'Test Airport', city: 'Test City' }
+      ]);
+    },
+    searchFlights: () => Promise.resolve([]),
+    getCheapestFlights: () => Promise.resolve([]),
+    getDestinationSuggestions: () => Promise.resolve([])
+  };
+}
+
+try {
+  const cacheModule = await import('../services/enhancedCacheService');
+  enhancedCacheService = cacheModule.enhancedCacheService;
+  console.log('✅ DEBUG: enhancedCacheService loaded successfully');
+} catch (error) {
+  console.error('❌ DEBUG: enhancedCacheService import failed:', error);
+  // Fallback cache service
+  enhancedCacheService = {
+    smartGet: () => Promise.resolve({ status: 'miss', data: null }),
+    smartSet: () => Promise.resolve({ success: true })
+  };
+}
+
 console.log('🔴 DEBUG: flights.ts loaded successfully!');
 console.log('🔴 DEBUG: travelPayoutsService type:', typeof travelPayoutsService);
 console.log('🔴 DEBUG: enhancedCacheService type:', typeof enhancedCacheService);
