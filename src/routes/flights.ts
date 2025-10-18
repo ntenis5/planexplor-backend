@@ -9,7 +9,7 @@ let enhancedCacheService;
 console.log('🔴 DEBUG: flights.ts - Starting dynamic imports...');
 
 try {
-  const travelModule = await import('../../src/services/travelpayoutsService.js');
+  const travelModule = await import('../../src/services/travelpayoutsService.ts');
   travelPayoutsService = travelModule.travelPayoutsService;
   console.log('✅ DEBUG: travelPayoutsService loaded successfully');
 } catch (error) {
@@ -29,7 +29,7 @@ try {
 }
 
 try {
-  const cacheModule = await import('../../src/services/enhancedCacheService.js');
+  const cacheModule = await import('../../src/services/enhancedCacheService.ts');
   enhancedCacheService = cacheModule.enhancedCacheService;
   console.log('✅ DEBUG: enhancedCacheService loaded successfully');
 } catch (error) {
