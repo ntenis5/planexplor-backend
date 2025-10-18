@@ -1,15 +1,12 @@
 #!/bin/bash
 set -e
 
-if [ ! -d "dist" ]; then
-    npm run build
-fi
-
-if [ ! -f "dist/app.js" ]; then
-    npm run build
-fi
-
 export NODE_ENV=production
 export PORT=$PORT
 
-exec node dist/app.js
+if ! command -v ts-node &> /dev/null; then
+    echo "Installing ts-node..."
+    npm install -g ts-node
+fi
+
+exec npx ts-node src/app.ts
