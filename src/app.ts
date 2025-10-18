@@ -83,7 +83,6 @@ async function startServer() {
     app.use(express.urlencoded({ extended: true, limit: '10mb' }));
     
     // ==================== DYNAMIC ROUTE LOADING ====================
-    // ⚠️ Këtu janë tashmë me '.js', kështu që kjo pjesë është e saktë.
     const routes = [
       { path: './routes/geolocation.js', mount: '/api/v1/geolocation' },
       { path: './routes/auth.js', mount: '/api/v1/auth' },
@@ -91,7 +90,7 @@ async function startServer() {
       { path: './routes/payments.js', mount: '/api/v1/payments' },
       { path: './routes/affiliate.js', mount: '/api/v1/affiliate' },
       { path: './routes/feed.js', mount: '/api/v1/feed' },
-      { path: './routes/flights.ts', mount: '/api/v1/flights' },
+      { path: './routes/flights.js', mount: '/api/v1/flights' },
       { path: './routes/systemAdmin.js', mount: '/api/v1/admin/system' },
       { path: './routes/cacheAdmin.js', mount: '/api/v1/admin/cache' },
       { path: './routes/analyticsDashboard.js', mount: '/api/v1/analytics' }
@@ -117,6 +116,37 @@ async function startServer() {
       console.log(`⚠️  ${failedRoutes} routes failed to load (non-critical)`);
     }
     
+    // ==================== ERROR HANDLING (NDRYSHUAR RENDITJA) ====================
+    // ⚠️ E vendosur këtu për t'u siguruar që është PAS ngarkimit të rrugëve.
+    app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
+        let errorMessage = 'Internal Server Error';
+        let statusCode = 500;
+        
+        if (error instanceof Error) {
+            errorMessage = error.message;
+            (req as any).log?.error(error, 'Globally captured error'); 
+        } else {
+            (req as any).log?.error(error, 'Unknown error caught globally');
+        }
+
+        res.status(statusCode).json({ 
+            error: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : errorMessage,
+            timestamp: Date.now(),
+            path: req.path
+        });
+    });
+
+    // ==================== 404 HANDLER (NDRYSHUAR RENDITJA) ====================
+    // ⚠️ Kjo DUHET të jetë Rruga e Fundit për të kapur çdo kërkesë të paidentifikuar.
+    app.use('*', (req: Request, res: Response) => {
+        res.status(404).json({ 
+            error: 'Route not found', 
+            path: req.originalUrl,
+            timestamp: Date.now(),
+            method: req.method
+        });
+    });
+
     // ==================== START SERVER ====================
     server = app.listen(PORT, '0.0.0.0', () => { 
         console.log(`🎯 SERVER RUNNING on port ${PORT}`);
@@ -161,35 +191,6 @@ async function startServer() {
 // ==================== START THE SERVER ====================
 startServer();
 
-// ==================== ERROR HANDLING ====================
-app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
-  let errorMessage = 'Internal Server Error';
-  let statusCode = 500;
-  
-  if (error instanceof Error) {
-    errorMessage = error.message;
-    (req as any).log?.error(error, 'Globally captured error'); 
-  } else {
-    (req as any).log?.error(error, 'Unknown error caught globally');
-  }
-
-  res.status(statusCode).json({ 
-    error: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : errorMessage,
-    timestamp: Date.now(),
-    path: req.path
-  });
-});
-
-// ==================== 404 HANDLER ====================
-app.use('*', (req: Request, res: Response) => {
-  res.status(404).json({ 
-    error: 'Route not found', 
-    path: req.originalUrl,
-    timestamp: Date.now(),
-    method: req.method
-  });
-});
-
 // ==================== GRACEFUL SHUTDOWN ====================
 process.on('SIGTERM', () => {
   console.log('🛑 Received SIGTERM, shutting down gracefully...');
@@ -214,3 +215,17 @@ process.on('SIGINT', () => {
     process.exit(0);
   }
 });
+```
+eof
+
+### Hapat e Radhës
+
+1.  **Zëvendësoni** kodin e plotë në `src/app.ts` me versionin e ri që ju dhashë.
+2.  **Bëni build-in** sërish (`npm run build`).
+3.  **Bëni deploy-in** në Railway.
+
+Kjo duhet të zgjidhë përfundimisht problemin e **`Route not found`**. Pasi të keni bërë deploy, testoni me kërkesën:
+
+```
+https://planexplor-backend-production.up.railway.app/api/v1/flights?origin=TIA&destination=VIE&departDate=2025-12-01
+  
