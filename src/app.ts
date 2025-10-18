@@ -4,7 +4,6 @@ import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import pino from 'pino-http';
-import dotenv from 'dotenv';
 import 'express-async-errors';
 
 if (process.env.NODE_ENV !== 'production') {
@@ -91,9 +90,8 @@ async function startServer() {
     { path: './routes/payments.js', mount: '/api/v1/payments' },
     { path: './routes/affiliate.js', mount: '/api/v1/affiliate' },
     { path: './routes/feed.js', mount: '/api/v1/feed' },
-    // ==================== FIX: VETËM NJË FLIGHTS ROUTE ====================
-    { path: './routes/flights.js', mount: '/api/v1/flights' }, // VETËM KJO!
-    // =======================================================================
+    { path: './routes/flights.js', mount: '/api/v1/flights' }, // alias për versionin me “s”
+    // ==============================================================
     { path: './routes/systemAdmin.js', mount: '/api/v1/admin/system' },
     { path: './routes/cacheAdmin.js', mount: '/api/v1/admin/cache' },
     { path: './routes/analyticsDashboard.js', mount: '/api/v1/analytics' },
